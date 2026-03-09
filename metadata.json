@@ -1,0 +1,8 @@
+{
+  "name": "Futsalbado - A Pelada Oficial",
+  "description": "Gestão completa para a pelada do Futsalbado: agendamentos, sorteios com IA e ranking de atletas.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
