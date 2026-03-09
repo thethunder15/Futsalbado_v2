@@ -402,7 +402,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
               <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-2xl shadow-sm border border-yellow-200 dark:border-yellow-900/30">
                 <p className="text-[10px] font-black text-yellow-600 dark:text-yellow-500 uppercase tracking-widest mb-3 border-b border-yellow-200 dark:border-yellow-900/30 pb-2">Colete Amarelo</p>
                 <div className="space-y-2">
-                  {['Goleiro', 'Zagueiro', 'Meio', 'Atacante'].map(position => {
+                  {['Goleiro', 'Zagueiro', 'Lateral', 'Meio', 'Atacante'].map(position => {
                     const playersInPosition = draft.teamAmarelo
                       .map(name => match.players.find(p => p.name === name))
                       .filter(Boolean)
@@ -429,7 +429,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
               <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-2xl shadow-sm border border-orange-200 dark:border-orange-900/30">
                 <p className="text-[10px] font-black text-[#f16d22] uppercase tracking-widest mb-3 border-b border-orange-200 dark:border-orange-900/30 pb-2">Colete Laranja</p>
                 <div className="space-y-2">
-                  {['Goleiro', 'Zagueiro', 'Meio', 'Atacante'].map(position => {
+                  {['Goleiro', 'Zagueiro', 'Lateral', 'Meio', 'Atacante'].map(position => {
                     const playersInPosition = draft.teamLaranja
                       .map(name => match.players.find(p => p.name === name))
                       .filter(Boolean)
