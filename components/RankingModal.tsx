@@ -12,7 +12,7 @@ const RankingModal: React.FC<RankingModalProps> = ({ users, onClose }) => {
   const sortedUsers = [...users].sort((a, b) => b.rating - a.rating);
 
   const getPodiumStyle = (index: number) => {
-    switch(index) {
+    switch (index) {
       case 0: return 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-yellow-500/20';
       case 1: return 'bg-gray-300 text-gray-800 border-gray-400 shadow-gray-500/20';
       case 2: return 'bg-orange-400 text-orange-900 border-orange-500 shadow-orange-500/20';
@@ -37,29 +37,29 @@ const RankingModal: React.FC<RankingModalProps> = ({ users, onClose }) => {
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-white/10 transition flex items-center justify-center font-bold text-lg">✕</button>
         </div>
-        
+
         <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-3 custom-scrollbar">
           {sortedUsers.length > 0 ? (
             sortedUsers.map((user, index) => (
-              <div 
-                key={user.id} 
+              <div
+                key={user.id}
                 className={`flex items-center gap-4 p-4 rounded-3xl border-2 transition-all hover:scale-[1.02] ${index < 3 ? 'border-orange-500/20 bg-orange-500/5' : 'border-gray-50 dark:border-[#2a2a2a] bg-white dark:bg-[#222]'}`}
               >
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black italic text-sm border-2 shrink-0 ${getPodiumStyle(index)}`}>
                   {getMedal(index)}
                 </div>
-                
-                <img 
-                  src={user.avatar} 
-                  alt={user.name} 
+
+                <img
+                  src={user.avatar}
+                  alt={user.name}
                   className="w-12 h-12 rounded-full border-2 border-[#f16d22] shrink-0"
                 />
-                
+
                 <div className="flex-1 min-w-0">
                   <h4 className="font-black text-gray-900 dark:text-white uppercase italic text-sm truncate">{user.name}</h4>
                   <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{user.position}</p>
                 </div>
-                
+
                 <div className="text-right shrink-0 flex flex-col items-end">
                   <div className="flex gap-0.5 mb-1">
                     {[...Array(5)].map((_, i) => (
@@ -82,7 +82,7 @@ const RankingModal: React.FC<RankingModalProps> = ({ users, onClose }) => {
         </div>
 
         <div className="p-6 bg-gray-50 dark:bg-[#181818] border-t border-gray-100 dark:border-[#2a2a2a] shrink-0 text-center">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">O rating é definido pelo administrador e desempenho em quadra.</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">O rating é definido pelo desempenho em quadra.</p>
         </div>
       </div>
     </div>

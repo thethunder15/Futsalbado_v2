@@ -5,6 +5,8 @@ interface FinishMatchModalProps {
     onSubmit: (scoreAmarelo: number, scoreLaranja: number) => void;
 }
 
+import WhistleIcon from './WhistleIcon';
+
 const FinishMatchModal: React.FC<FinishMatchModalProps> = ({ onClose, onSubmit }) => {
     const [scoreAmarelo, setScoreAmarelo] = useState<string>('');
     const [scoreLaranja, setScoreLaranja] = useState<string>('');
@@ -23,7 +25,7 @@ const FinishMatchModal: React.FC<FinishMatchModalProps> = ({ onClose, onSubmit }
             <div className="bg-white dark:bg-[#1e1e1e] w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 text-center">
                     <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
-                        <span className="text-3xl">🏁</span>
+                        <WhistleIcon className="w-8 h-8 text-white" />
                     </div>
                     <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Finalizar Jogo</h2>
                     <p className="text-green-100 text-xs font-bold uppercase tracking-wider mt-1">Grave o resultado épico para a história</p>

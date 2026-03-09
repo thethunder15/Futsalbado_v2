@@ -5,7 +5,7 @@ export interface User {
   phone: string;
   avatar: string;
   rating: number; // 1-5
-  position: 'Goleiro' | 'Zagueiro' | 'Meia' | 'Atacante';
+  position: 'Goleiro' | 'Zagueiro' | 'Meio' | 'Atacante';
   isAdmin?: boolean;
 }
 
@@ -39,4 +39,13 @@ export interface TeamDraft {
   teamAmarelo: string[];
   teamLaranja: string[];
   justification: string;
+}
+
+export interface PlayerRating {
+  id?: string;
+  matchId: string;
+  raterId: string;
+  ratedId: string;
+  rating: number;
+  createdAt?: string;
 }

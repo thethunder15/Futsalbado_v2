@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Match, User, TeamDraft } from '../types';
 import { balanceTeams } from '../services/gemini';
 import { supabase } from '../services/supabase';
+import WhistleIcon from './WhistleIcon';
 
 interface MatchCardProps {
   match: Match;
@@ -279,25 +280,23 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
           <div className="flex justify-between items-end mb-2">
             <div className="flex items-center gap-3">
               <span className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider">Atletas Confirmados</span>
-              {isAdmin && (
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#2a2a2a] rounded-lg p-0.5 border border-gray-200 dark:border-[#333]">
-                  <button
-                    onClick={onRemoveMockPlayer}
-                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-red-500 transition-colors"
-                    title="Remover Bot"
-                  >
-                    -
-                  </button>
-                  <span className="text-[9px] font-bold text-gray-400 px-1 uppercase">Bots</span>
-                  <button
-                    onClick={onAddMockPlayer}
-                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-green-500 transition-colors"
-                    title="Adicionar Bot"
-                  >
-                    +
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#2a2a2a] rounded-lg p-0.5 border border-gray-200 dark:border-[#333]">
+                <button
+                  onClick={onRemoveMockPlayer}
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-red-500 transition-colors"
+                  title="Remover Convidado"
+                >
+                  -
+                </button>
+                <span className="text-[9px] font-bold text-gray-400 px-1 uppercase gap-1 flex items-center">Convidados 🎟️</span>
+                <button
+                  onClick={onAddMockPlayer}
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-green-500 transition-colors"
+                  title="Adicionar Convidado"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <span className="text-xs font-black text-[#f16d22] uppercase tracking-wider">{match.players.length}/{match.maxPlayers}</span>
           </div>
@@ -343,7 +342,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
               <span className="text-3xl font-black italic">{match.scoreAmarelo}</span>
             </div>
             <div className="flex flex-col items-center z-10 px-4">
-              <span className="text-xl">🏁</span>
+              <WhistleIcon className="w-6 h-6" />
               <span className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-widest">Fim de Jogo</span>
             </div>
             <div className="flex flex-col items-center z-10">
@@ -378,7 +377,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
                 onClick={onFinishMatch}
                 className="w-full sm:w-auto px-6 py-4 bg-green-500 text-white rounded-2xl font-black uppercase italic text-sm hover:bg-green-600 border border-green-600 transition-all transform active:scale-95 shadow-xl shadow-green-900/20 flex items-center justify-center gap-2"
               >
-                <span>🏁</span> Finalizar
+                <WhistleIcon className="w-5 h-5 mb-0.5" /> Finalizar
               </button>
             )}
           </div>
@@ -395,15 +394,57 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-2xl shadow-sm border border-yellow-200 dark:border-yellow-900/30">
                 <p className="text-[10px] font-black text-yellow-600 dark:text-yellow-500 uppercase tracking-widest mb-3 border-b border-yellow-200 dark:border-yellow-900/30 pb-2">Colete Amarelo</p>
-                <ul className="text-xs font-bold text-gray-700 dark:text-gray-300 space-y-2">
-                  {draft.teamAmarelo.filter(name => match.players.some(p => p.name === name)).map((name, index) => <li key={`${name}-${index}`} className="flex items-center gap-2">⚽ {name}</li>)}
-                </ul>
+                <div className="space-y-2">
+                  {['Goleiro', 'Zagueiro', 'Meio', 'Atacante'].map(position => {
+                    const playersInPosition = draft.teamAmarelo
+                      .map(name => match.players.find(p => p.name === name))
+                      .filter(Boolean)
+                      .filter(p => p && allUsers[p.userId]?.position === position);
+                    
+                    if (playersInPosition.length === 0) return null;
+                    
+                    return (
+                      <div key={`amarelo-${position}`} className="mb-2">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-yellow-700/60 dark:text-yellow-500/60 block mb-1">{position}s</span>
+                        <ul className="text-xs font-bold text-gray-700 dark:text-gray-300 space-y-1">
+                          {playersInPosition.map((p, index) => (
+                            <li key={`amarelo-${p!.userId}-${index}`} className="flex items-center justify-between bg-yellow-100/50 dark:bg-yellow-900/20 px-2 py-1.5 rounded-lg border border-yellow-200/50 dark:border-yellow-700/30">
+                              <span className="flex items-center gap-1.5">⚽ {p!.name}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-yellow-200 dark:bg-yellow-800 rounded font-black uppercase text-yellow-800 dark:text-yellow-200">{position.substring(0, 3)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-2xl shadow-sm border border-orange-200 dark:border-orange-900/30">
                 <p className="text-[10px] font-black text-[#f16d22] uppercase tracking-widest mb-3 border-b border-orange-200 dark:border-orange-900/30 pb-2">Colete Laranja</p>
-                <ul className="text-xs font-bold text-gray-700 dark:text-gray-300 space-y-2">
-                  {draft.teamLaranja.filter(name => match.players.some(p => p.name === name)).map((name, index) => <li key={`${name}-${index}`} className="flex items-center gap-2">⚽ {name}</li>)}
-                </ul>
+                <div className="space-y-2">
+                  {['Goleiro', 'Zagueiro', 'Meio', 'Atacante'].map(position => {
+                    const playersInPosition = draft.teamLaranja
+                      .map(name => match.players.find(p => p.name === name))
+                      .filter(Boolean)
+                      .filter(p => p && allUsers[p.userId]?.position === position);
+                    
+                    if (playersInPosition.length === 0) return null;
+                    
+                    return (
+                      <div key={`laranja-${position}`} className="mb-2">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-orange-700/60 dark:text-orange-500/60 block mb-1">{position}s</span>
+                        <ul className="text-xs font-bold text-gray-700 dark:text-gray-300 space-y-1">
+                          {playersInPosition.map((p, index) => (
+                            <li key={`laranja-${p!.userId}-${index}`} className="flex items-center justify-between bg-orange-100/50 dark:bg-orange-900/20 px-2 py-1.5 rounded-lg border border-orange-200/50 dark:border-orange-700/30">
+                              <span className="flex items-center gap-1.5">⚽ {p!.name}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-orange-200 dark:bg-orange-800 rounded font-black uppercase text-orange-800 dark:text-orange-200">{position.substring(0, 3)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <p className="text-[11px] text-[#f16d22]/80 mt-4 font-bold italic border-t border-[#f16d22]/10 pt-3">"{draft.justification}"</p>

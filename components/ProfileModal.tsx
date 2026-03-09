@@ -187,23 +187,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                   >
                     <option value="Goleiro">Goleiro</option>
                     <option value="Zagueiro">Zagueiro</option>
-                    <option value="Meia">Meia</option>
+                    <option value="Meio">Meio</option>
                     <option value="Atacante">Atacante</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-2 ml-1">Habilidade</label>
-                  <select
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition font-bold text-gray-900 dark:text-white"
-                    value={formData.rating}
-                    onChange={e => setFormData({ ...formData, rating: parseInt(e.target.value) })}
+                  <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-2 ml-1 flex items-center justify-between">
+                    <span>Habilidade</span>
+                    <span className="text-[9px] text-[#f16d22]">★ Definida em quadra</span>
+                  </label>
+                  <div
+                    className="w-full px-5 py-[14px] bg-gray-100 dark:bg-[#1a1a1a] border-2 border-gray-200 dark:border-[#2a2a2a] rounded-2xl font-black text-gray-500 dark:text-gray-400 cursor-not-allowed flex items-center gap-2 shadow-inner"
+                    title="Sua habilidade agora é atualizada baseada nas avaliações dos colegas de equipe durante as partidas."
                   >
-                    <option value="1">⭐ Perna de Pau</option>
-                    <option value="2">⭐⭐ Esforçado</option>
-                    <option value="3">⭐⭐⭐ Joga Muito</option>
-                    <option value="4">⭐⭐⭐⭐ Profissional</option>
-                    <option value="5">⭐⭐⭐⭐⭐ Seleção</option>
-                  </select>
+                    <span className="text-yellow-500 text-lg">⭐</span> 
+                    <span className="text-xl">{Number(formData.rating).toFixed(1)}</span>
+                  </div>
                 </div>
               </div>
 

@@ -9,6 +9,9 @@ import ProfileModal from './components/ProfileModal';
 import RankingModal from './components/RankingModal';
 import FinishMatchModal from './components/FinishMatchModal';
 import HistoryModal from './components/HistoryModal';
+import PendingRatingsModal from './components/PendingRatingsModal';
+import AddGuestModal from './components/AddGuestModal';
+import RemoveGuestModal from './components/RemoveGuestModal';
 
 import { supabase } from './services/supabase';
 
@@ -20,7 +23,16 @@ const App: React.FC = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isRankingModalOpen, setIsRankingModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isPendingRatingsModalOpen, setIsPendingRatingsModalOpen] = useState(false);
+  const [pendingMatchesToRate, setPendingMatchesToRate] = useState<Match[]>([]);
   const [finishingMatchId, setFinishingMatchId] = useState<string | null>(null);
+  
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+  const [guestMatchId, setGuestMatchId] = useState<string | null>(null);
+
+  const [isRemoveGuestModalOpen, setIsRemoveGuestModalOpen] = useState(false);
+  const [removeGuestMatchId, setRemoveGuestMatchId] = useState<string | null>(null);
+
   const [allUsers, setAllUsers] = useState<Record<string, User>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -29,6 +41,15 @@ const App: React.FC = () => {
     return (saved as 'light' | 'dark') || 'light';
   });
   const [toast, setToast] = useState<{ message: string, visible: boolean }>({ message: '', visible: false });
+
+  // Helper para limpar sorteio caso o elenco mude
+  const clearMatchDraft = async (matchId: string) => {
+    try {
+      await supabase.from('team_drafts').delete().eq('match_id', matchId);
+    } catch (err) {
+      console.error('Erro ao limpar sorteio:', err);
+    }
+  };
 
   // Lógica de Debounce para a busca
   useEffect(() => {
@@ -114,6 +135,42 @@ const App: React.FC = () => {
     }
   };
 
+  const checkPendingRatings = async (currentMatches: Match[], userId: string) => {
+    try {
+      // 1. Achar partidas finalizadas que o usuário participou
+      const finishedMatchesUserPlayed = currentMatches.filter(
+        m => m.status === 'finished' && m.players.some(p => p.userId === userId)
+      );
+
+      if (finishedMatchesUserPlayed.length === 0) {
+        setPendingMatchesToRate([]);
+        return;
+      }
+
+      // 2. Buscar avaliações enviadas pelo usuário
+      const { data: userRatings, error } = await supabase
+        .from('player_ratings')
+        .select('match_id')
+        .eq('rater_id', userId);
+
+      if (error) throw error;
+
+      const ratedMatchIds = new Set(userRatings?.map(r => r.match_id) || []);
+
+      // 3. Filtrar apenas as partidas ainda não avaliadas
+      const pendingMatches = finishedMatchesUserPlayed.filter(m => !ratedMatchIds.has(m.id));
+      setPendingMatchesToRate(pendingMatches);
+    } catch (error) {
+      console.error('Erro ao checar avaliações pendentes:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser && matches.length > 0) {
+      checkPendingRatings(matches, currentUser.id);
+    }
+  }, [currentUser, matches]);
+
   useEffect(() => {
     const checkSession = async () => {
       // Verifica se o Supabase tem uma sessão ativa real
@@ -130,6 +187,7 @@ const App: React.FC = () => {
         console.warn('Sessão do Supabase expirada ou inexistente. Forçando logout local.');
         localStorage.removeItem('futsalbado_user');
         setCurrentUser(null);
+        setPendingMatchesToRate([]);
       }
 
       fetchMatches();
@@ -310,8 +368,35 @@ const App: React.FC = () => {
           .eq('user_id', currentUser.id);
 
         if (error) throw error;
+        await clearMatchDraft(matchId);
         showToast('Presença cancelada. Que pena! ❌');
+        fetchMatches(); // Recarregar após sair
       } else {
+        // Validação autoritativa das pendências direto no banco para evitar race conditions
+        const { data: userRatings } = await supabase
+          .from('player_ratings')
+          .select('match_id')
+          .eq('rater_id', currentUser.id);
+        
+        const ratedMatchIds = new Set(userRatings?.map(r => r.match_id) || []);
+        
+        const finishedMatchesUserPlayed = matches.filter(
+          m => m.status === 'finished' && m.players.some(p => p.userId === currentUser.id)
+        );
+        
+        const hasActualPendencies = finishedMatchesUserPlayed.some(m => !ratedMatchIds.has(m.id));
+
+        // Bloquear inscrição se houver pendências
+        if (hasActualPendencies || pendingMatchesToRate.length > 0) {
+          showToast('Você possui avaliações pendentes! Resolva-as antes de se inscrever.');
+          setIsPendingRatingsModalOpen(true);
+          // Força a atualização do estado caso estivesse defasado
+          if (hasActualPendencies && pendingMatchesToRate.length === 0) {
+            checkPendingRatings(matches, currentUser.id);
+          }
+          return;
+        }
+
         if (match.players.length >= match.maxPlayers) {
           showToast('Vagas esgotadas! 🚫');
           return;
@@ -326,6 +411,7 @@ const App: React.FC = () => {
           }]);
 
         if (error) throw error;
+        await clearMatchDraft(matchId);
         showToast('Confirmado na lista! Toca o terror! ⚽🔥');
       }
       fetchMatches();
@@ -335,80 +421,117 @@ const App: React.FC = () => {
     }
   };
 
-  const addMockPlayer = async (matchId: string) => {
-    const match = matches.find(m => m.id === matchId);
+  const openGuestModal = (matchId: string) => {
+    setGuestMatchId(matchId);
+    setIsGuestModalOpen(true);
+  };
+
+  const handleAddGuest = async (guestData: { name: string; phone: string; position: User['position']; rating: number }) => {
+    if (!guestMatchId) return;
+    const match = matches.find(m => m.id === guestMatchId);
     if (!match) return;
 
     if (match.players.length >= match.maxPlayers) {
       showToast('Vagas esgotadas! 🚫');
+      setIsGuestModalOpen(false);
       return;
     }
 
     try {
-      const mockNames = ['Pelé', 'Maradona', 'Zico', 'Ronaldo', 'Ronaldinho', 'Messi', 'CR7', 'Neymar', 'Romário', 'Bebeto', 'Kaká', 'Rivaldo', 'Cafu', 'Roberto Carlos'];
-      const randomName = mockNames[Math.floor(Math.random() * mockNames.length)] + ' (Bot)';
-      const randomPhone = `119${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`;
-
-      const { data: userData, error: userError } = await supabase
+      // 1. Check if phone exists in table
+      const { data: existingUsers, error: searchError } = await supabase
         .from('users')
-        .insert([{
-          name: randomName,
-          phone: randomPhone,
-          avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${randomPhone}`,
-          position: ['Goleiro', 'Zagueiro', 'Meio', 'Atacante'][Math.floor(Math.random() * 4)],
-          rating: Math.floor(Math.random() * 5) + 1
-        }])
-        .select()
-        .single();
+        .select('*')
+        .eq('phone', guestData.phone)
+        .limit(1);
 
-      if (userError) throw userError;
+      if (searchError) throw searchError;
 
+      let userId = '';
+
+      if (existingUsers && existingUsers.length > 0) {
+        userId = existingUsers[0].id;
+        // Verify if user is already in match
+        if (match.players.some(p => p.userId === userId)) {
+          showToast('Este jogador já está confirmado na partida! 🛑');
+          setIsGuestModalOpen(false);
+          return;
+        }
+      } else {
+        // Create new user (guest)
+        const newGuestName = guestData.name + ' (Convidado)';
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .insert([{
+            name: newGuestName,
+            phone: guestData.phone,
+            avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${guestData.phone.replace(/\D/g, '')}&accessoriesProbability=50`,
+            position: guestData.position,
+            rating: guestData.rating
+          }])
+          .select()
+          .single();
+
+        if (userError) throw userError;
+        userId = userData.id;
+      }
+
+      // Add to match_players
       const { error: matchError } = await supabase
         .from('match_players')
         .insert([{
-          match_id: matchId,
-          user_id: userData.id,
+          match_id: guestMatchId,
+          user_id: userId,
           status: 'confirmado'
         }]);
 
       if (matchError) throw matchError;
 
-      showToast(`Bot ${randomName} adicionado! 🤖`);
+      await clearMatchDraft(guestMatchId);
+      showToast(`Convidado ${guestData.name} adicionado! 🎟️`);
+      setIsGuestModalOpen(false);
+      setGuestMatchId(null);
       fetchMatches();
     } catch (error) {
-      console.error('Erro ao adicionar bot:', error);
-      showToast('Erro ao adicionar bot.');
+      console.error('Erro ao adicionar convidado:', error);
+      showToast('Erro ao adicionar convidado. O telefone pode estar mal formatado ou indisponível.');
     }
   };
 
-  const removeMockPlayer = async (matchId: string) => {
+  const openRemoveGuestModal = (matchId: string) => {
     const match = matches.find(m => m.id === matchId);
     if (!match) return;
-
-    const mockPlayers = match.players.filter(p => p.name.includes('(Bot)'));
-    if (mockPlayers.length === 0) {
-      showToast('Nenhum bot para remover! 🤖');
+    
+    const guestPlayers = match.players.filter(p => p.name.includes('(Convidado)') || p.name.includes('(Bot)'));
+    if (guestPlayers.length === 0) {
+      showToast('Nenhum convidado para remover! 🤷');
       return;
     }
 
-    const playerToRemove = mockPlayers[mockPlayers.length - 1];
+    setRemoveGuestMatchId(matchId);
+    setIsRemoveGuestModalOpen(true);
+  };
+
+  const handleRemoveGuest = async (userId: string) => {
+    if (!removeGuestMatchId) return;
 
     try {
       const { error } = await supabase
         .from('match_players')
         .delete()
-        .eq('match_id', matchId)
-        .eq('user_id', playerToRemove.userId);
+        .eq('match_id', removeGuestMatchId)
+        .eq('user_id', userId);
 
       if (error) throw error;
 
-      await supabase.from('users').delete().eq('id', playerToRemove.userId);
-
-      showToast(`Bot ${playerToRemove.name} removido! 🗑️`);
+      await clearMatchDraft(removeGuestMatchId);
+      showToast(`Convidado removido da lista! 🗑️`);
+      setIsRemoveGuestModalOpen(false);
+      setRemoveGuestMatchId(null);
       fetchMatches();
     } catch (error) {
-      console.error('Erro ao remover bot:', error);
-      showToast('Erro ao remover bot.');
+      console.error('Erro ao remover convidado:', error);
+      showToast('Erro ao remover convidado.');
     }
   };
 
@@ -450,15 +573,17 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20 bg-[#f8f9fa] dark:bg-[#121212] transition-colors duration-300">
-      <Navbar
-        user={currentUser}
-        onLogout={handleLogout}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onEditProfile={() => setIsProfileModalOpen(true)}
-        onShowRanking={() => setIsRankingModalOpen(true)}
-        onShowHistory={() => setIsHistoryModalOpen(true)}
-      />
+        <Navbar 
+          user={currentUser}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onEditProfile={() => setIsProfileModalOpen(true)}
+          onShowRanking={() => setIsRankingModalOpen(true)} 
+          onShowHistory={() => setIsHistoryModalOpen(true)} 
+          onOpenPendingRatings={() => setIsPendingRatingsModalOpen(true)}
+          pendingRatingsCount={pendingMatchesToRate.length}
+          onLogout={handleLogout} 
+        />
 
       <main className="max-w-4xl mx-auto px-4 pt-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -507,8 +632,8 @@ const App: React.FC = () => {
                 setIsModalOpen(true);
               }}
               onDelete={() => handleDeleteMatch(match.id)}
-              onAddMockPlayer={() => addMockPlayer(match.id)}
-              onRemoveMockPlayer={() => removeMockPlayer(match.id)}
+              onAddMockPlayer={() => openGuestModal(match.id)}
+              onRemoveMockPlayer={() => openRemoveGuestModal(match.id)}
               onDraftSaved={() => fetchMatches()}
               onFinishMatch={() => setFinishingMatchId(match.id)}
               isJoined={match.players.some(p => p.userId === currentUser.id)}
@@ -549,6 +674,8 @@ const App: React.FC = () => {
       {isHistoryModalOpen && (
         <HistoryModal
           matches={matches}
+          currentUserId={currentUser.id}
+          allUsers={allUsers}
           onClose={() => setIsHistoryModalOpen(false)}
         />
       )}
@@ -579,6 +706,19 @@ const App: React.FC = () => {
         />
       )}
 
+      {isPendingRatingsModalOpen && (
+        <PendingRatingsModal
+          matches={pendingMatchesToRate}
+          currentUser={currentUser}
+          allUsers={allUsers}
+          onClose={() => setIsPendingRatingsModalOpen(false)}
+          onRatingsSubmitted={() => {
+            checkPendingRatings(matches, currentUser.id);
+            fetchMatches(); // Re-fetch matches to update player ratings
+          }}
+        />
+      )}
+
       {currentUser?.isAdmin && (
         <div className="fixed bottom-8 right-6 z-40 md:hidden">
           <button
@@ -590,6 +730,27 @@ const App: React.FC = () => {
             </svg>
           </button>
         </div>
+      )}
+
+      {isGuestModalOpen && guestMatchId && (
+        <AddGuestModal
+          onClose={() => {
+            setIsGuestModalOpen(false);
+            setGuestMatchId(null);
+          }}
+          onSubmit={handleAddGuest}
+        />
+      )}
+
+      {isRemoveGuestModalOpen && removeGuestMatchId && (
+        <RemoveGuestModal
+          guests={matches.find(m => m.id === removeGuestMatchId)?.players.filter(p => p.name.includes('(Convidado)') || p.name.includes('(Bot)')) || []}
+          onClose={() => {
+            setIsRemoveGuestModalOpen(false);
+            setRemoveGuestMatchId(null);
+          }}
+          onSelectGuest={handleRemoveGuest}
+        />
       )}
     </div>
   );

@@ -34,7 +34,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regPosition, setRegPosition] = useState<User['position']>('Meia');
+  const [regPosition, setRegPosition] = useState<User['position']>('Meio');
   const [regRating, setRegRating] = useState(3);
   const [regError, setRegError] = useState('');
 
@@ -94,18 +94,38 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       const fakeEmail = `${regPhone.replace(/\D/g, '')}@futsalbado.com`;
 
+      let authUserId: string | undefined;
+
       // 1. Criar usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: fakeEmail,
         password: regPassword,
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Erro ao criar usuário');
+      if (authError) {
+        // Se o usuário já existe no Auth (ex: perfil deletado mas auth mantido)
+        if (authError.message.includes('User already registered') || authError.message.includes('already registered')) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: fakeEmail,
+            password: regPassword,
+          });
+
+          if (signInError) {
+            throw new Error('Este telefone já está em uso porem a senha informada não confere. Tente o formulário de Login.');
+          }
+          authUserId = signInData.user?.id;
+        } else {
+          throw authError;
+        }
+      } else {
+        authUserId = authData.user?.id;
+      }
+
+      if (!authUserId) throw new Error('Erro ao criar usuário');
 
       // 2. Inserir perfil na tabela public.users
       const newUser: User = {
-        id: authData.user.id,
+        id: authUserId,
         name: regName || 'Craque',
         phone: regPhone,
         avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${regName || Math.random()}&accessoriesProbability=10`,
@@ -208,7 +228,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 >
                   <option value="Goleiro">Goleiro</option>
                   <option value="Zagueiro">Zagueiro</option>
-                  <option value="Meia">Meia</option>
+                  <option value="Meio">Meio</option>
                   <option value="Atacante">Atacante</option>
                 </select>
               </div>

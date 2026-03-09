@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
-import { Match } from '../types';
+import { Match, User } from '../types';
 
 interface HistoryModalProps {
     onClose: () => void;
     matches: Match[];
+    currentUserId: string;
+    allUsers: Record<string, User>;
 }
-
-const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches }) => {
+const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches, currentUserId, allUsers }) => {
     const finishedMatches = useMemo(() => {
         return matches
             .filter(m => m.status === 'finished')
@@ -124,32 +125,34 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches }) => {
                                         const isLarWinner = larScore > amScore;
 
                                         return (
-                                            <div key={match.id} className="bg-white dark:bg-[#262626] border border-gray-100 dark:border-[#333] rounded-2xl p-4 flex flex-col sm:flex-row gap-4 sm:items-center justify-between shadow-sm">
-
-                                                <div className="flex-1">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#f16d22] mb-1">
-                                                        {new Date(match.date).toLocaleDateString('pt-BR')}
-                                                    </p>
-                                                    <h5 className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate max-w-[150px]">{match.title}</h5>
-                                                </div>
-
-                                                <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#1e1e1e] p-2 rounded-xl border border-gray-100 dark:border-[#2a2a2a]">
-                                                    {/* Amarelo */}
-                                                    <div className={`flex flex-col items-center min-w-[3rem] ${isAmWinner ? 'opacity-100 scale-110' : 'opacity-60'}`}>
-                                                        <span className="text-[10px] font-black text-yellow-500 uppercase">AMA</span>
-                                                        <span className={`text-2xl font-black italic ${isAmWinner ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-600'}`}>
-                                                            {amScore}
-                                                        </span>
+                                            <div key={match.id} className="bg-white dark:bg-[#262626] border border-gray-100 dark:border-[#333] rounded-2xl p-4 flex flex-col gap-4 shadow-sm relative overflow-hidden">
+                                                
+                                                <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+                                                    <div className="flex-1">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-[#f16d22] mb-1">
+                                                            {new Date(match.date).toLocaleDateString('pt-BR')}
+                                                        </p>
+                                                        <h5 className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate max-w-[150px]">{match.title}</h5>
                                                     </div>
 
-                                                    <span className="text-xs font-black italic text-gray-300 dark:text-gray-600">X</span>
+                                                    <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#1e1e1e] p-2 rounded-xl border border-gray-100 dark:border-[#2a2a2a]">
+                                                        {/* Amarelo */}
+                                                        <div className={`flex flex-col items-center min-w-[3rem] ${isAmWinner ? 'opacity-100 scale-110' : 'opacity-60'}`}>
+                                                            <span className="text-[10px] font-black text-yellow-500 uppercase">AMA</span>
+                                                            <span className={`text-2xl font-black italic ${isAmWinner ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-600'}`}>
+                                                                {amScore}
+                                                            </span>
+                                                        </div>
 
-                                                    {/* Laranja */}
-                                                    <div className={`flex flex-col items-center min-w-[3rem] ${isLarWinner ? 'opacity-100 scale-110' : 'opacity-60'}`}>
-                                                        <span className="text-[10px] font-black text-[#f16d22] uppercase">LAR</span>
-                                                        <span className={`text-2xl font-black italic ${isLarWinner ? 'text-[#f16d22]' : 'text-gray-400 dark:text-gray-600'}`}>
-                                                            {larScore}
-                                                        </span>
+                                                        <span className="text-xs font-black italic text-gray-300 dark:text-gray-600">X</span>
+
+                                                        {/* Laranja */}
+                                                        <div className={`flex flex-col items-center min-w-[3rem] ${isLarWinner ? 'opacity-100 scale-110' : 'opacity-60'}`}>
+                                                            <span className="text-[10px] font-black text-[#f16d22] uppercase">LAR</span>
+                                                            <span className={`text-2xl font-black italic ${isLarWinner ? 'text-[#f16d22]' : 'text-gray-400 dark:text-gray-600'}`}>
+                                                                {larScore}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
 
