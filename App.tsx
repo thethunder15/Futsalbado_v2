@@ -500,6 +500,122 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAddRentedGoalie = async (matchId: string) => {
+    try {
+      showToast('Buscando Goleiro de Aluguel... 🧤');
+      const match = matches.find(m => m.id === matchId);
+      if (!match) return;
+
+      if (match.players.length >= match.maxPlayers) {
+        showToast('A partida já está lotada!');
+        return;
+      }
+
+      const hasAp1 = match.players.some(p => p.name === 'Goleiro Ap 1');
+      const hasAp2 = match.players.some(p => p.name === 'Goleiro Ap 2');
+
+      if (hasAp1 && hasAp2) {
+        showToast('O limite é de 2 Goleiros Ap por partida!');
+        return;
+      }
+
+      const goalieName = !hasAp1 ? 'Goleiro Ap 1' : 'Goleiro Ap 2';
+      const fakePhone = !hasAp1 ? '00000000001' : '00000000002';
+
+      // Verifica se o Goleiro AP já existe na base de usuários
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', fakePhone)
+        .single();
+
+      let userId = existingUser?.id;
+
+      if (!userId) {
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert([{
+            name: goalieName,
+            phone: fakePhone,
+            avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${goalieName.replace(/ /g, '')}&accessoriesProbability=50`,
+            position: 'Goleiro',
+            rating: 5,
+            weight: 75
+          }])
+          .select()
+          .single();
+
+        if (userError) throw userError;
+        userId = newUser.id;
+      }
+
+      // Adicionar na partida
+      const { error: matchError } = await supabase
+        .from('match_players')
+        .insert([{
+          match_id: matchId,
+          user_id: userId,
+          status: 'confirmado'
+        }]);
+
+      if (matchError) {
+        if (matchError.code === '23505') {
+          showToast(`O ${goalieName} já está nesta partida.`);
+          return;
+        }
+        throw matchError;
+      }
+
+      await clearMatchDraft(matchId);
+      showToast(`${goalieName} convocado para o jogo! 🧤⚽`);
+      fetchMatches();
+    } catch (error) {
+      console.error('Erro ao adicionar Goleiro AP:', error);
+      showToast('Erro ao convocar Goleiro de Aluguel.');
+    }
+  };
+
+  const handleRemoveRentedGoalie = async (matchId: string) => {
+    try {
+      const match = matches.find(m => m.id === matchId);
+      if (!match) return;
+
+      const ap2 = match.players.find(p => p.name === 'Goleiro Ap 2');
+      const ap1 = match.players.find(p => p.name === 'Goleiro Ap 1');
+
+      const goalieToRemove = ap2 || ap1;
+
+      if (!goalieToRemove) {
+        showToast('Não há Goleiros de Aluguel nesta partida!');
+        return;
+      }
+      
+      console.log('Tentando deletar:', goalieToRemove.userId, 'da partida:', matchId);
+
+      const { error, count } = await supabase
+        .from('match_players')
+        .delete({ count: 'exact' })
+        .eq('match_id', matchId)
+        .eq('user_id', goalieToRemove.userId);
+
+      console.log('Resultado do DB:', { error, count });
+
+      if (error) throw error;
+      
+      if (count === 0) {
+        showToast('Nenhuma linha foi afetada no banco. Possível bloqueio de permissão RLS.');
+        return;
+      }
+
+      await clearMatchDraft(matchId);
+      showToast(`${goalieToRemove.name} dispensado! 👋`);
+      fetchMatches();
+    } catch (error) {
+      console.error('Erro ao remover Goleiro AP:', error);
+      showToast('Erro ao dispensar o Goleiro.');
+    }
+  };
+
   const openRemoveGuestModal = (matchId: string) => {
     const match = matches.find(m => m.id === matchId);
     if (!match) return;
@@ -637,6 +753,8 @@ const App: React.FC = () => {
               onDelete={() => handleDeleteMatch(match.id)}
               onAddMockPlayer={() => openGuestModal(match.id)}
               onRemoveMockPlayer={() => openRemoveGuestModal(match.id)}
+              onAddRentedGoalie={() => handleAddRentedGoalie(match.id)}
+              onRemoveRentedGoalie={() => handleRemoveRentedGoalie(match.id)}
               onDraftSaved={() => fetchMatches()}
               onFinishMatch={() => setFinishingMatchId(match.id)}
               isJoined={match.players.some(p => p.userId === currentUser.id)}

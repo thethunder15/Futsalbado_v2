@@ -25,6 +25,12 @@ Se um jogador recorrente não puder comparecer, qualquer atleta já inscrito na 
 2. Faz o cruzamento na Base de Dados e identifica se o Goleirão convidado já tem uma conta ou se é um novato puramente virtual.
 3. Se o convidado sumir ou desistir, qualquer outro jogador pode abrir a "Telinha de Corte" (`RemoveGuestModal`) e desvincular o convidado específico com facilidade, liberando a vaga imediatamente aos atletas na fila de espera. As escalações e os sorteios são resetados para preservar o equilíbrio automático.
 
+### 🧤 Goleiros de Aluguel (Goleiro Ap)
+Para salvar as partidas que estão sem arqueiros, Administradores possuem um atalho especial na interface gráfica de convocados chamado **Goleiro Ap**.
+- Com apenas um clique, a aplicação injeta automaticamente até dois perfis genéricos (Goleiro Ap 1 e 2) diretamente no Banco de Dados.
+- Esses perfis "imortais" sempre entrarão no **Sorteio da IA** contabilizando `75kg` e nota de Habilidade Máxima (`5.0`), equilibrando perfeitamente as forças de ambos os times gerados pelo Gemini.
+- Podem ser facilmente demitidos da partida com um toque no botão de subtração, abrindo novamente as vagas para os jogadores orgânicos.
+
 ## 🛠️ Tecnologias Utilizadas
 
 - **Frontend:** React, TypeScript, TailwindCSS, Vite, PWA

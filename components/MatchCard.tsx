@@ -12,6 +12,8 @@ interface MatchCardProps {
   onDelete: () => void;
   onAddMockPlayer: () => void;
   onRemoveMockPlayer: () => void;
+  onAddRentedGoalie: () => void;
+  onRemoveRentedGoalie: () => void;
   onDraftSaved: () => void;
   onFinishMatch: () => void;
   isJoined: boolean;
@@ -19,7 +21,7 @@ interface MatchCardProps {
   currentUserId: string;
 }
 
-const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, onAddMockPlayer, onRemoveMockPlayer, onDraftSaved, onFinishMatch, isJoined, allUsers, currentUserId }) => {
+const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, onAddMockPlayer, onRemoveMockPlayer, onAddRentedGoalie, onRemoveRentedGoalie, onDraftSaved, onFinishMatch, isJoined, allUsers, currentUserId }) => {
   const [isDrafting, setIsDrafting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
@@ -287,22 +289,43 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
           <div className="flex justify-between items-end mb-2">
             <div className="flex items-center gap-3">
               <span className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider">Atletas Confirmados</span>
-              <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#2a2a2a] rounded-lg p-0.5 border border-gray-200 dark:border-[#333]">
-                <button
-                  onClick={onRemoveMockPlayer}
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-red-500 transition-colors"
-                  title="Remover Convidado"
-                >
-                  -
-                </button>
-                <span className="text-[9px] font-bold text-gray-400 px-1 uppercase gap-1 flex items-center">Convidados 🎟️</span>
-                <button
-                  onClick={onAddMockPlayer}
-                  className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-green-500 transition-colors"
-                  title="Adicionar Convidado"
-                >
-                  +
-                </button>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#2a2a2a] rounded-lg p-0.5 border border-gray-200 dark:border-[#333]">
+                  <button
+                    onClick={onRemoveMockPlayer}
+                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-red-500 transition-colors"
+                    title="Remover Convidado"
+                  >
+                    -
+                  </button>
+                  <span className="text-[9px] font-bold text-gray-400 px-1 uppercase gap-1 flex items-center">Convidados 🎟️</span>
+                  <button
+                    onClick={onAddMockPlayer}
+                    className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-[#333] hover:text-green-500 transition-colors"
+                    title="Adicionar Convidado"
+                  >
+                    +
+                  </button>
+                </div>
+                {isAdmin && (
+                  <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/10 rounded-lg p-0.5 border border-blue-200 dark:border-blue-900/30">
+                    <button
+                      onClick={onRemoveRentedGoalie}
+                      className="w-6 h-6 flex items-center justify-center rounded-md text-blue-500 hover:bg-white dark:hover:bg-[#333] hover:text-red-500 transition-colors"
+                      title="Remover Goleiro Ap"
+                    >
+                      -
+                    </button>
+                    <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 px-1 uppercase gap-1 flex items-center">Goleiro Ap 🧤</span>
+                    <button
+                      onClick={onAddRentedGoalie}
+                      className="w-6 h-6 flex items-center justify-center rounded-md text-blue-500 hover:bg-white dark:hover:bg-[#333] hover:text-green-500 transition-colors"
+                      title="Adicionar Goleiro Ap"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             <span className="text-xs font-black text-[#f16d22] uppercase tracking-wider">{match.players.length}/{match.maxPlayers}</span>
