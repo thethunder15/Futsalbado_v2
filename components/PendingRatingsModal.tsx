@@ -65,7 +65,9 @@ const PendingRatingsModal: React.FC<PendingRatingsModalProps> = ({ matches, curr
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                       <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-[#2a2a2a] flex flex-col items-center justify-center flex-shrink-0 border border-gray-200 dark:border-[#333]">
                         <span className="text-xs font-black text-gray-500">{match.date.split('-')[2]}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">{new Date(match.date).toLocaleString('default', { month: 'short' })}</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">
+                          {new Date(`${match.date}T12:00:00`).toLocaleString('pt-BR', { month: 'short' })}
+                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-black text-gray-900 dark:text-white uppercase truncate text-sm sm:text-base">{match.title}</h3>

@@ -27,6 +27,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
 
   const draft = match.draft;
 
+  // Função auxiliar para formatar a data (YYYY-MM-DD -> DD/MM/YYYY) sem usar Date() puro, que causa bugs de fuso horário
+  const getFormattedDate = (dateString: string) => {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   const handleDraftTeams = async () => {
     if (match.players.length < 2) {
       setShowAlert(true);
@@ -75,7 +82,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
   };
 
   const handleShare = async () => {
-    const formattedDate = new Date(match.date).toLocaleDateString('pt-BR');
+    const formattedDate = getFormattedDate(match.date);
     let shareText = `*CONVOCAÇÃO FUTSALBADO!* ⚽🔥\n\n`;
     shareText += `🏆 *${match.title}*\n`;
     shareText += `📅 Data: ${formattedDate}\n`;
@@ -264,7 +271,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
             <div className="text-xl">📅</div>
             <div>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-black tracking-widest">Data</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-200 uppercase italic">{new Date(match.date).toLocaleDateString('pt-BR')}</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-200 uppercase italic">{getFormattedDate(match.date)}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-[#262626] rounded-2xl border border-gray-100 dark:border-[#333333]">

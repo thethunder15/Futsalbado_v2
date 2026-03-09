@@ -11,7 +11,8 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches, currentUs
     const finishedMatches = useMemo(() => {
         return matches
             .filter(m => m.status === 'finished')
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            // Comparação de string no formato YYYY-MM-DD é segura para ordem cronológica
+            .sort((a, b) => b.date.localeCompare(a.date));
     }, [matches]);
 
     const stats = useMemo(() => {
@@ -35,6 +36,13 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches, currentUs
             : 'empate';
 
     const last3 = finishedMatches.slice(0, 3);
+
+    // Função auxiliar para formatar a data (YYYY-MM-DD -> DD/MM/YYYY) sem causar bugs de fuso horário
+    const getFormattedDate = (dateString: string) => {
+        if (!dateString) return '';
+        const [year, month, day] = dateString.split('-');
+        return `${day}/${month}/${year}`;
+    };
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -130,7 +138,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches, currentUs
                                                 <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
                                                     <div className="flex-1">
                                                         <p className="text-[10px] font-black uppercase tracking-widest text-[#f16d22] mb-1">
-                                                            {new Date(match.date).toLocaleDateString('pt-BR')}
+                                                            {getFormattedDate(match.date)}
                                                         </p>
                                                         <h5 className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate max-w-[150px]">{match.title}</h5>
                                                     </div>

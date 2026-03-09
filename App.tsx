@@ -554,7 +554,8 @@ const App: React.FC = () => {
         // 2. Filtro de Busca (Se houver query)
         if (!query) return true;
 
-        const formattedDate = new Date(match.date).toLocaleDateString('pt-BR');
+        const [y, m, d] = match.date.split('-');
+        const formattedDate = `${d}/${m}/${y}`;
         return (
           match.title.toLowerCase().includes(query) ||
           match.location.toLowerCase().includes(query) ||
