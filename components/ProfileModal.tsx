@@ -235,6 +235,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                   >
                     <option value="Goleiro">Goleiro</option>
                     <option value="Zagueiro">Zagueiro</option>
+                    <option value="Lateral">Lateral</option>
                     <option value="Meio">Meio</option>
                     <option value="Atacante">Atacante</option>
                   </select>

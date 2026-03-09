@@ -5,7 +5,7 @@ export interface User {
   phone: string;
   avatar: string;
   rating: number; // 1-5
-  position: 'Goleiro' | 'Zagueiro' | 'Meio' | 'Atacante';
+  position: 'Goleiro' | 'Zagueiro' | 'Lateral' | 'Meio' | 'Atacante';
   isAdmin?: boolean;
 }
 

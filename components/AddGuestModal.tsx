@@ -80,6 +80,7 @@ const AddGuestModal: React.FC<AddGuestModalProps> = ({ onClose, onSubmit }) => {
               >
                 <option value="Goleiro">Goleiro</option>
                 <option value="Zagueiro">Zagueiro</option>
+                <option value="Lateral">Lateral</option>
                 <option value="Meio">Meio</option>
                 <option value="Atacante">Atacante</option>
               </select>
