@@ -11,7 +11,9 @@ interface ProfileModalProps {
 const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState<User>({ ...user });
   const [showCamera, setShowCamera] = useState(false);
+  const [showImageOptions, setShowImageOptions] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,7 +24,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
     onSave(formData);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, avatar: reader.result as string });
+        setShowImageOptions(false);
+      };
+      reader.readAsDataURL(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const startCamera = async () => {
+    setShowImageOptions(false);
     setCameraError(null);
     setShowCamera(true);
     try {
@@ -107,12 +125,35 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                   alt="Avatar"
                   className="w-32 h-32 rounded-full border-4 border-[#f16d22] shadow-lg object-cover bg-gray-100 dark:bg-[#262626]"
                 />
+                
+                {showImageOptions && (
+                  <div className="absolute top-1/2 left-[110%] -translate-y-1/2 ml-2 bg-white dark:bg-[#1e1e1e] border-2 border-gray-100 dark:border-[#333333] rounded-2xl shadow-xl p-2 flex flex-col gap-2 min-w-[160px] z-50 animate-in fade-in zoom-in-95">
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-[#262626] rounded-xl font-bold text-sm text-gray-700 dark:text-gray-300 transition flex items-center gap-2"
+                    >
+                      <span>📷</span> Câmera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowImageOptions(false);
+                        fileInputRef.current?.click();
+                      }}
+                      className="text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-[#262626] rounded-xl font-bold text-sm text-gray-700 dark:text-gray-300 transition flex items-center gap-2"
+                    >
+                      <span>🖼️</span> Galeria
+                    </button>
+                  </div>
+                )}
+
                 <div className="absolute -bottom-2 -right-2 flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={startCamera}
+                    onClick={() => setShowImageOptions(!showImageOptions)}
                     className="bg-blue-600 text-white p-3 rounded-full border-2 border-white dark:border-[#1e1e1e] hover:scale-110 transition-transform shadow-md"
-                    title="Tirar Foto Real"
+                    title="Alterar Foto"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -161,6 +202,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
               </div>
             )}
             <canvas ref={canvasRef} className="hidden" />
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+            />
             {cameraError && <p className="text-red-500 text-[10px] font-bold mt-2 uppercase">{cameraError}</p>}
           </div>
 
