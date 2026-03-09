@@ -232,6 +232,7 @@ const App: React.FC = () => {
           name: updatedUser.name,
           position: updatedUser.position,
           rating: updatedUser.rating,
+          weight: updatedUser.weight,
           avatar: updatedUser.avatar
         })
         .eq('id', updatedUser.id);
@@ -426,7 +427,7 @@ const App: React.FC = () => {
     setIsGuestModalOpen(true);
   };
 
-  const handleAddGuest = async (guestData: { name: string; phone: string; position: User['position']; rating: number }) => {
+  const handleAddGuest = async (guestData: { name: string; phone: string; position: User['position']; rating: number; weight: number }) => {
     if (!guestMatchId) return;
     const match = matches.find(m => m.id === guestMatchId);
     if (!match) return;
@@ -467,7 +468,8 @@ const App: React.FC = () => {
             phone: guestData.phone,
             avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${guestData.phone.replace(/\D/g, '')}&accessoriesProbability=50`,
             position: guestData.position,
-            rating: guestData.rating
+            rating: guestData.rating,
+            weight: guestData.weight
           }])
           .select()
           .single();

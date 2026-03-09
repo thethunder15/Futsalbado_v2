@@ -12,7 +12,8 @@ export const balanceTeams = async (players: PlayerEntry[], userDetails: Record<s
       return {
         name: p.name,
         rating: details?.rating || 3,
-        position: details?.position || 'Meio'
+        position: details?.position || 'Meio',
+        weight: details?.weight || 75
       };
     });
 
@@ -22,6 +23,7 @@ export const balanceTeams = async (players: PlayerEntry[], userDetails: Record<s
     1. Não permita que 2 Goleiros fiquem no mesmo time. Se houver 2 goleiros, coloque um em cada time.
     2. Equilibre os times por posição (ex: distribua os Zagueiros, Meias e Atacantes igualmente entre os times).
     3. Considere o nível de habilidade (rating de 1 a 5) para que a soma das habilidades de cada time seja o mais próxima possível.
+    4. Considere o peso (weight em kg) dos jogadores, de modo a formar times fisicamente equilibrados também (distribua os jogadores mais pesados igualmente).
     
     Jogadores: ${JSON.stringify(playerData)}
   `;

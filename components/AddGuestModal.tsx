@@ -3,7 +3,7 @@ import { User } from '../types';
 
 interface AddGuestModalProps {
   onClose: () => void;
-  onSubmit: (guestData: { name: string; phone: string; position: User['position']; rating: number }) => void;
+  onSubmit: (guestData: { name: string; phone: string; position: User['position']; rating: number; weight: number }) => void;
 }
 
 const formatPhoneNumber = (value: string) => {
@@ -24,11 +24,12 @@ const AddGuestModal: React.FC<AddGuestModalProps> = ({ onClose, onSubmit }) => {
   const [phone, setPhone] = useState('');
   const [position, setPosition] = useState<User['position']>('Meio');
   const [rating, setRating] = useState<number>(3);
+  const [weight, setWeight] = useState<number>(75);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || phone.length < 14) return;
-    onSubmit({ name, phone, position, rating });
+    onSubmit({ name, phone, position, rating, weight });
   };
 
   return (
@@ -86,6 +87,18 @@ const AddGuestModal: React.FC<AddGuestModalProps> = ({ onClose, onSubmit }) => {
               </select>
             </div>
             <div>
+              <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1 ml-1">Peso (kg)</label>
+              <input
+                required
+                type="number"
+                min="30"
+                max="200"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition text-gray-900 dark:text-white font-bold text-sm"
+                value={weight}
+                onChange={e => setWeight(parseInt(e.target.value) || 75)}
+              />
+            </div>
+            <div className="col-span-2">
               <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1 ml-1">Habilidade</label>
               <select
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition text-gray-900 dark:text-white cursor-pointer font-bold text-sm"

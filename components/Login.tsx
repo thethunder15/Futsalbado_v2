@@ -37,6 +37,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [regPassword, setRegPassword] = useState('');
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [regPosition, setRegPosition] = useState<User['position']>('Meio');
+  const [regWeight, setRegWeight] = useState<number>(75);
   const [regRating, setRegRating] = useState(3);
   const [regError, setRegError] = useState('');
 
@@ -144,7 +145,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         phone: regPhone,
         avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${regName || Math.random()}&accessoriesProbability=10`,
         rating: regRating,
-        position: regPosition
+        position: regPosition,
+        weight: regWeight
       };
 
       const { error: dbError } = await supabase
@@ -156,7 +158,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             phone: newUser.phone,
             avatar: newUser.avatar,
             rating: newUser.rating,
-            position: newUser.position
+            position: newUser.position,
+            weight: newUser.weight
           }
         ]);
 
@@ -268,6 +271,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </select>
               </div>
               <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Peso (kg)</label>
+                <input
+                  required
+                  type="number"
+                  min="30"
+                  max="200"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition text-gray-900 dark:text-white font-bold"
+                  value={regWeight}
+                  onChange={e => setRegWeight(parseInt(e.target.value) || 75)}
+                />
+              </div>
+              <div className="col-span-2">
                 <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Habilidade</label>
                 <select
                   className="w-full px-4 py-3 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition text-gray-900 dark:text-white cursor-pointer font-bold"

@@ -225,7 +225,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-2 ml-1">Posição</label>
                   <select
@@ -241,9 +241,21 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                   </select>
                 </div>
                 <div>
+                  <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-2 ml-1">Peso (kg)</label>
+                  <input
+                    required
+                    type="number"
+                    min="30"
+                    max="200"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition font-bold text-gray-900 dark:text-white"
+                    value={formData.weight || ''}
+                    onChange={e => setFormData({ ...formData, weight: parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-2 ml-1 flex items-center justify-between">
-                    <span>Habilidade</span>
-                    <span className="text-[9px] text-[#f16d22]">★ Definida em quadra</span>
+                    <span>Hab</span>
+                    <span className="text-[9px] text-[#f16d22]">★</span>
                   </label>
                   <div
                     className="w-full px-5 py-[14px] bg-gray-100 dark:bg-[#1a1a1a] border-2 border-gray-200 dark:border-[#2a2a2a] rounded-2xl font-black text-gray-500 dark:text-gray-400 cursor-not-allowed flex items-center gap-2 shadow-inner"

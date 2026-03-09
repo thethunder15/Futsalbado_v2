@@ -6,6 +6,7 @@ export interface User {
   avatar: string;
   rating: number; // 1-5
   position: 'Goleiro' | 'Zagueiro' | 'Lateral' | 'Meio' | 'Atacante';
+  weight?: number; // Peso em kg
   isAdmin?: boolean;
 }
 
