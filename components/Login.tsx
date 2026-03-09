@@ -125,7 +125,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       if (!authUserId) throw new Error('Erro ao criar usuário');
 
-      // 2. Inserir perfil na tabela public.users
+      // 2. Verificar se o perfil já existe na tabela public.users
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUserId)
+        .single();
+        
+      if (existingUser) {
+        // Se o usuário já existe na tabela public.users, mostramos erro amigável na tela de cadastro
+        throw new Error('Esta conta já existe. Por favor, volte e faça Login.');
+      }
+
+      // 3. Inserir novo perfil na tabela public.users
       const newUser: User = {
         id: authUserId,
         name: regName || 'Craque',
@@ -148,7 +160,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           }
         ]);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Erro no DB Insert:", dbError);
+        if (dbError.code === '23505') {
+            throw new Error('Este telefone já está registrado para outro craque. Tente fazer Login.');
+        }
+        throw dbError;
+      }
 
       onLogin(newUser);
     } catch (error: any) {
