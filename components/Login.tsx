@@ -29,11 +29,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Registration state
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [regPosition, setRegPosition] = useState<User['position']>('Meio');
   const [regRating, setRegRating] = useState(3);
   const [regError, setRegError] = useState('');
@@ -205,16 +207,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             <div>
               <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Senha</label>
-              <input
-                required
-                type="password"
-                placeholder="••••••"
-                className="w-full px-4 py-3 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] focus:border-[#f16d22] outline-none transition text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 font-bold"
-                value={regPassword}
-                onChange={e => setRegPassword(e.target.value)}
-                minLength={6}
-                title="A senha deve ter pelo menos 6 caracteres"
-              />
+              <div className="relative">
+                <input
+                  required
+                  type={showRegPassword ? "text" : "password"}
+                  placeholder="••••••"
+                  className="w-full px-4 py-3 pr-12 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] focus:border-[#f16d22] outline-none transition text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 font-bold"
+                  value={regPassword}
+                  onChange={e => setRegPassword(e.target.value)}
+                  minLength={6}
+                  title="A senha deve ter pelo menos 6 caracteres"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                  aria-label={showRegPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showRegPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  )}
+                </button>
+              </div>
               <p className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 mt-1.5 ml-2 tracking-wide">Mínimo 6 caracteres</p>
             </div>
 
@@ -321,14 +337,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
           <div>
             <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Senha</label>
-            <input
-              required
-              type="password"
-              placeholder="••••••••"
-              className="w-full px-4 py-3 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] focus:border-[#f16d22] outline-none transition text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 font-bold"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                required
+                type={showLoginPassword ? "text" : "password"}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 pr-12 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] focus:border-[#f16d22] outline-none transition text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 font-bold"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                aria-label={showLoginPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showLoginPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                )}
+              </button>
+            </div>
           </div>
 
           <button

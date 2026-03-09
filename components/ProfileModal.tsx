@@ -125,7 +125,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                   alt="Avatar"
                   className="w-32 h-32 rounded-full border-4 border-[#f16d22] shadow-lg object-cover bg-gray-100 dark:bg-[#262626]"
                 />
-                
+
                 {showImageOptions && (
                   <div className="absolute top-1/2 left-[110%] -translate-y-1/2 ml-2 bg-white dark:bg-[#1e1e1e] border-2 border-gray-100 dark:border-[#333333] rounded-2xl shadow-xl p-2 flex flex-col gap-2 min-w-[160px] z-50 animate-in fade-in zoom-in-95">
                     <button
@@ -202,12 +202,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
               </div>
             )}
             <canvas ref={canvasRef} className="hidden" />
-            <input 
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
-              ref={fileInputRef} 
-              onChange={handleFileUpload} 
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
             />
             {cameraError && <p className="text-red-500 text-[10px] font-bold mt-2 uppercase">{cameraError}</p>}
           </div>
@@ -248,7 +248,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose, onSave }) =>
                     className="w-full px-5 py-[14px] bg-gray-100 dark:bg-[#1a1a1a] border-2 border-gray-200 dark:border-[#2a2a2a] rounded-2xl font-black text-gray-500 dark:text-gray-400 cursor-not-allowed flex items-center gap-2 shadow-inner"
                     title="Sua habilidade agora é atualizada baseada nas avaliações dos colegas de equipe durante as partidas."
                   >
-                    <span className="text-yellow-500 text-lg">⭐</span> 
+                    <span className="text-yellow-500 text-lg">⭐</span>
                     <span className="text-xl">{Number(formData.rating).toFixed(1)}</span>
                   </div>
                 </div>
