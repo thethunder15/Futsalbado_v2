@@ -8,8 +8,10 @@ interface RankingModalProps {
 }
 
 const RankingModal: React.FC<RankingModalProps> = ({ users, onClose }) => {
-  // Ordenar usuários por rating (maior para menor)
-  const sortedUsers = [...users].sort((a, b) => b.rating - a.rating);
+  // Filtrar Goleiros AP e ordenar usuários por rating (maior para menor)
+  const sortedUsers = [...users]
+    .filter(u => !u.name.toLowerCase().startsWith('goleiro ap'))
+    .sort((a, b) => b.rating - a.rating);
 
   const getPodiumStyle = (index: number) => {
     switch (index) {
