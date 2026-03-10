@@ -352,7 +352,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
               >
                 <div className={`w-2.5 h-2.5 rounded-full ${isMe ? 'bg-white animate-pulse' : 'bg-[#f16d22]'}`}></div>
                 <span className="flex items-center gap-1">
-                  {p.name.split(' ')[0]}
+                  {p.name}
                   {isUserOrganizer && (
                     <span title="Organizador" className="text-yellow-500 drop-shadow-sm filter">👑</span>
                   )}
