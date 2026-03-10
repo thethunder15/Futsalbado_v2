@@ -127,7 +127,7 @@ const App: React.FC = () => {
         };
       });
 
-      setAllUsers(newAllUsers);
+      setAllUsers(prev => ({ ...prev, ...newAllUsers }));
       setMatches(formattedMatches);
     } catch (error) {
       console.error('Erro ao buscar partidas:', error);

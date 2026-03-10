@@ -430,9 +430,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
                       .map(name => match.players.find(p => p.name === name))
                       .filter(Boolean)
                       .filter(p => p && allUsers[p.userId]?.position === position);
-                    
+
                     if (playersInPosition.length === 0) return null;
-                    
+
                     return (
                       <div key={`amarelo-${position}`} className="mb-2">
                         <span className="text-[8px] font-black uppercase tracking-widest text-yellow-700/60 dark:text-yellow-500/60 block mb-1">{position}s</span>
@@ -457,9 +457,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
                       .map(name => match.players.find(p => p.name === name))
                       .filter(Boolean)
                       .filter(p => p && allUsers[p.userId]?.position === position);
-                    
+
                     if (playersInPosition.length === 0) return null;
-                    
+
                     return (
                       <div key={`laranja-${position}`} className="mb-2">
                         <span className="text-[8px] font-black uppercase tracking-widest text-orange-700/60 dark:text-orange-500/60 block mb-1">{position}s</span>
