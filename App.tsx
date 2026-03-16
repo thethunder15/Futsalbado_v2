@@ -667,7 +667,7 @@ const App: React.FC = () => {
 
         // 2. Filtro de Data (Somente jogos futuros ou de hoje)
         const matchDate = new Date(match.date + 'T23:59:59');
-        if (matchDate < now) return false;
+        if (matchDate < now && match.status !== 'open') return false;
 
         // 2. Filtro de Busca (Se houver query)
         if (!query) return true;
