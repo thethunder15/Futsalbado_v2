@@ -13,9 +13,10 @@ interface NavbarProps {
   onShowHistory: () => void;
   onOpenPendingRatings: () => void;
   pendingRatingsCount: number;
+  onAdminResetPassword?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ user, onLogout, theme, onToggleTheme, onEditProfile, onShowRanking, onShowHistory, onOpenPendingRatings, pendingRatingsCount }) => {
+const Navbar: React.FC<NavbarProps> = ({ user, onLogout, theme, onToggleTheme, onEditProfile, onShowRanking, onShowHistory, onOpenPendingRatings, pendingRatingsCount, onAdminResetPassword }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -137,6 +138,22 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout, theme, onToggleTheme, o
                 </button>
 
                 <div className="h-[1px] bg-gray-100 dark:bg-[#2a2a2a] my-1"></div>
+
+                {/* Botão admin: redefinir senha de usuário */}
+                {user.isAdmin && onAdminResetPassword && (
+                  <>
+                    <button
+                      onClick={() => { onAdminResetPassword(); setIsMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 rounded-xl transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Redefinir Senha de Usuário
+                    </button>
+                    <div className="h-[1px] bg-gray-100 dark:bg-[#2a2a2a] my-1"></div>
+                  </>
+                )}
 
                 <button
                   onClick={() => { onLogout(); setIsMenuOpen(false); }}

@@ -31,6 +31,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loginError, setLoginError] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [forgotName, setForgotName] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [showForgotPwd, setShowForgotPwd] = useState(false);
+  const [forgotStep, setForgotStep] = useState<'verify' | 'reset'>('verify');
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotUserId, setForgotUserId] = useState('');
+
   // Registration state
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
@@ -132,7 +145,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         .select('*')
         .eq('id', authUserId)
         .single();
-        
+
       if (existingUser) {
         // Se o usuário já existe na tabela public.users, mostramos erro amigável na tela de cadastro
         throw new Error('Esta conta já existe. Por favor, volte e faça Login.');
@@ -166,7 +179,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (dbError) {
         console.error("Erro no DB Insert:", dbError);
         if (dbError.code === '23505') {
-            throw new Error('Este telefone já está registrado para outro craque. Tente fazer Login.');
+          throw new Error('Este telefone já está registrado para outro craque. Tente fazer Login.');
         }
         throw dbError;
       }
@@ -179,6 +192,210 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setIsAuthenticating(false);
     }
   };
+
+  const handleVerifyIdentity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotLoading(true);
+    try {
+      const digits = forgotPhone.replace(/\D/g, '');
+      // Busca insensível ao formato: tenta formatado e dígitos puros
+      let queryRes = await supabase.from('users').select('id, name').eq('phone', forgotPhone).limit(1);
+      if (queryRes.error || !queryRes.data || queryRes.data.length === 0) {
+        queryRes = await supabase.from('users').select('id, name').eq('phone', digits).limit(1);
+      }
+
+      if (queryRes.error) throw queryRes.error;
+      if (!queryRes.data || queryRes.data.length === 0) {
+        setForgotError('Telefone não encontrado. Verifique o número informado.');
+        return;
+      }
+
+      const user = queryRes.data[0];
+
+      // Normalizar strings para comparação (remover espaços e acentos)
+      const normalize = (str: string) => 
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '');
+
+      if (normalize(user.name) !== normalize(forgotName)) {
+        setForgotError('Nome não confere com o cadastrado. Tente novamente.');
+        return;
+      }
+
+      // Identidade confirmada — avançar para redefinição
+      setForgotUserId(user.id);
+      setForgotStep('reset');
+    } catch (err: any) {
+      setForgotError(err.message || 'Erro ao verificar identidade.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleSelfResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError('As senhas não coincidem.');
+      return;
+    }
+    if (forgotNewPassword.length < 6) {
+      setForgotError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey || serviceKey === 'COLE_SUA_SERVICE_ROLE_KEY_AQUI') {
+      setForgotError('Funcionalidade indisponível. Contate o administrador.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const adminClient = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        serviceKey,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      );
+      const { error } = await adminClient.auth.admin.updateUserById(forgotUserId, {
+        password: forgotNewPassword,
+      });
+      if (error) throw error;
+      setForgotSuccess('✅ Senha redefinida com sucesso! Faça login com a nova senha.');
+    } catch (err: any) {
+      setForgotError(err.message || 'Erro ao redefinir senha.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-[#f8f9fa] dark:bg-[#121212] transition-colors duration-300">
+        <div className="bg-white dark:bg-[#1e1e1e] p-8 rounded-[2rem] shadow-2xl w-full max-w-md border border-gray-100 dark:border-[#2a2a2a]">
+          <div className="flex justify-center mb-6"><Logo className="w-20 h-20" /></div>
+
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-[#f16d22]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[#f16d22]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-1 uppercase italic tracking-tight">
+              {forgotStep === 'verify' ? 'Verificar Identidade' : 'Nova Senha'}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+              {forgotStep === 'verify'
+                ? 'Informe seu telefone e nome completo cadastrado para continuar.'
+                : 'Defina sua nova senha de acesso.'}
+            </p>
+            {/* Indicador de etapas */}
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <div className="w-8 h-1.5 rounded-full bg-[#f16d22]" />
+              <div className={`w-8 h-1.5 rounded-full transition-colors ${forgotStep === 'reset' ? 'bg-[#f16d22]' : 'bg-gray-200 dark:bg-[#333]'}`} />
+            </div>
+          </div>
+
+          {forgotError && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-red-600 dark:text-red-400 text-xs font-bold text-center">{forgotError}</p>
+            </div>
+          )}
+          {forgotSuccess && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/50 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-green-700 dark:text-green-400 text-xs font-bold text-center">{forgotSuccess}</p>
+            </div>
+          )}
+
+          {/* ETAPA 1: Verificação */}
+          {forgotStep === 'verify' && !forgotSuccess && (
+            <form onSubmit={handleVerifyIdentity} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Meu Telefone Cadastrado</label>
+                <input
+                  required
+                  type="tel"
+                  placeholder="(11) 99999-9999"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] focus:border-[#f16d22] outline-none transition text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 font-bold"
+                  value={forgotPhone}
+                  onChange={e => setForgotPhone(formatPhoneNumber(e.target.value))}
+                  maxLength={15}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Meu Nome Completo Cadastrado</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="Como você se cadastrou"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] focus:border-[#f16d22] outline-none transition text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 font-bold"
+                  value={forgotName}
+                  onChange={e => setForgotName(e.target.value)}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className={`w-full py-4 bg-[#f16d22] text-white rounded-2xl font-black uppercase italic shadow-xl shadow-orange-900/20 hover:bg-[#d95d1b] transition-all transform active:scale-95 ${forgotLoading ? 'opacity-50' : ''}`}
+              >
+                {forgotLoading ? 'Verificando...' : 'Verificar Identidade →'}
+              </button>
+            </form>
+          )}
+
+          {/* ETAPA 2: Nova senha */}
+          {forgotStep === 'reset' && !forgotSuccess && (
+            <form onSubmit={handleSelfResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Nova Senha</label>
+                <div className="relative">
+                  <input
+                    required
+                    type={showForgotPwd ? 'text' : 'password'}
+                    placeholder="Mínimo 6 caracteres"
+                    minLength={6}
+                    className="w-full px-4 py-3 pr-12 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition text-gray-900 dark:text-white font-bold"
+                    value={forgotNewPassword}
+                    onChange={e => setForgotNewPassword(e.target.value)}
+                  />
+                  <button type="button" onClick={() => setShowForgotPwd(v => !v)} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 transition">
+                    {showForgotPwd
+                      ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                      : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    }
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase mb-1.5 ml-1">Confirmar Nova Senha</label>
+                <input
+                  required
+                  type="password"
+                  placeholder="Repita a senha"
+                  className="w-full px-4 py-3 bg-white dark:bg-[#262626] border-2 border-gray-100 dark:border-[#333333] rounded-2xl focus:ring-2 focus:ring-[#f16d22] outline-none transition text-gray-900 dark:text-white font-bold"
+                  value={forgotConfirmPassword}
+                  onChange={e => setForgotConfirmPassword(e.target.value)}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className={`w-full py-4 bg-[#f16d22] text-white rounded-2xl font-black uppercase italic shadow-xl shadow-orange-900/20 hover:bg-[#d95d1b] transition-all transform active:scale-95 ${forgotLoading ? 'opacity-50' : ''}`}
+              >
+                {forgotLoading ? 'Redefinindo...' : '🔑 Redefinir Senha'}
+              </button>
+            </form>
+          )}
+
+          <button
+            type="button"
+            onClick={() => { setShowForgotPassword(false); setForgotStep('verify'); setForgotError(''); setForgotSuccess(''); }}
+            className="w-full mt-4 py-3 text-gray-400 dark:text-gray-600 font-black uppercase italic text-[10px] tracking-[0.2em] hover:text-gray-600 dark:hover:text-gray-400 transition-all text-center flex items-center justify-center gap-2"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            Voltar para o Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (showProfileSetup) {
     return (
@@ -401,6 +618,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             className={`w-full bg-[#f16d22] text-white py-4 rounded-2xl font-black uppercase italic shadow-xl shadow-orange-900/20 hover:bg-[#d95d1b] transition-all mt-2 ${isAuthenticating ? 'opacity-50' : 'transform active:scale-95'}`}
           >
             Entrar
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setShowForgotPassword(true); setForgotPhone(phone); }}
+            className="w-full text-center text-xs font-black text-gray-400 dark:text-gray-600 hover:text-[#f16d22] transition-colors pt-1 uppercase tracking-widest"
+          >
+            Esqueci minha senha
           </button>
         </form>
 

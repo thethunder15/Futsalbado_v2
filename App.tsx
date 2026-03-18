@@ -12,6 +12,7 @@ import HistoryModal from './components/HistoryModal';
 import PendingRatingsModal from './components/PendingRatingsModal';
 import AddGuestModal from './components/AddGuestModal';
 import RemoveGuestModal from './components/RemoveGuestModal';
+import AdminResetPasswordModal from './components/AdminResetPasswordModal';
 
 import { supabase } from './services/supabase';
 
@@ -32,6 +33,7 @@ const App: React.FC = () => {
 
   const [isRemoveGuestModalOpen, setIsRemoveGuestModalOpen] = useState(false);
   const [removeGuestMatchId, setRemoveGuestMatchId] = useState<string | null>(null);
+  const [isAdminResetPasswordOpen, setIsAdminResetPasswordOpen] = useState(false);
 
   const [allUsers, setAllUsers] = useState<Record<string, User>>({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,32 +61,37 @@ const App: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  const fetchMatches = async () => {
+  const fetchMatches = async (attempt = 1) => {
     try {
+      // Query 1: matches + team_drafts
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
-        .select(`
-          *,
-          team_drafts (*),
-          match_players (
-            user_id,
-            status,
-            joined_at,
-            users (*)
-          )
-        `);
-
+        .select('*, team_drafts (*)');
       if (matchesError) throw matchesError;
 
-      const newAllUsers: Record<string, User> = { ...allUsers };
+      // Query 2: match_players (sem join com users para ser rápido)
+      const { data: playersData, error: playersError } = await supabase
+        .from('match_players')
+        .select('match_id, user_id, status, joined_at');
+      if (playersError) throw playersError;
+
+      // Query 3: Todos os usuários para o "cache" local
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*');
+      if (userError) throw userError;
+
+      // Criar mapa de usuários para acesso rápido O(1)
+      const userMap: Record<string, User> = {};
+      userData.forEach(u => {
+        userMap[u.id] = u;
+      });
 
       const formattedMatches: Match[] = (matchesData || []).map((m: any) => {
-        const players: PlayerEntry[] = (m.match_players || []).map((mp: any) => {
-          const user = mp.users;
-          if (user) {
-            newAllUsers[user.id] = user;
-          }
+        const matchPlayers = (playersData || []).filter((mp: any) => mp.match_id === m.id);
+
+        const players: PlayerEntry[] = matchPlayers.map((mp: any) => {
+          const user = userMap[mp.user_id];
           return {
             userId: mp.user_id,
             name: user?.name || 'Desconhecido',
@@ -93,7 +100,6 @@ const App: React.FC = () => {
           };
         });
 
-        // Pegar o rascunho de time associado se houver (Supabase pode retornar Array ou Objeto dependendo se é 1-to-M ou 1-to-1)
         let draftData = null;
         if (Array.isArray(m.team_drafts) && m.team_drafts.length > 0) {
           draftData = m.team_drafts[0];
@@ -112,7 +118,7 @@ const App: React.FC = () => {
           id: m.id,
           title: m.title,
           date: m.date,
-          time: m.time.substring(0, 5),
+          time: (m.time || '00:00:00').substring(0, 5),
           location: m.location,
           locationUri: m.location_uri,
           maxPlayers: m.max_players,
@@ -127,11 +133,15 @@ const App: React.FC = () => {
         };
       });
 
-      setAllUsers(prev => ({ ...prev, ...newAllUsers }));
+      setAllUsers(userMap);
       setMatches(formattedMatches);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === '57014' && attempt < 3) {
+        console.warn(`Timeout na busca (tentativa ${attempt}/3). Retentando...`);
+        setTimeout(() => fetchMatches(attempt + 1), 1000);
+        return;
+      }
       console.error('Erro ao buscar partidas:', error);
-      showToast('Erro ao carregar as partidas.');
     }
   };
 
@@ -701,7 +711,8 @@ const App: React.FC = () => {
           onShowHistory={() => setIsHistoryModalOpen(true)} 
           onOpenPendingRatings={() => setIsPendingRatingsModalOpen(true)}
           pendingRatingsCount={pendingMatchesToRate.length}
-          onLogout={handleLogout} 
+          onLogout={handleLogout}
+          onAdminResetPassword={() => setIsAdminResetPasswordOpen(true)}
         />
 
       <main className="max-w-4xl mx-auto px-4 pt-8">
@@ -871,6 +882,12 @@ const App: React.FC = () => {
             setRemoveGuestMatchId(null);
           }}
           onSelectGuest={handleRemoveGuest}
+        />
+      )}
+
+      {isAdminResetPasswordOpen && currentUser?.isAdmin && (
+        <AdminResetPasswordModal
+          onClose={() => setIsAdminResetPasswordOpen(false)}
         />
       )}
     </div>
