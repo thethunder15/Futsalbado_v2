@@ -5,9 +5,10 @@ import { User } from '../types';
 interface RankingModalProps {
   users: User[];
   onClose: () => void;
+  isLoading?: boolean;
 }
 
-const RankingModal: React.FC<RankingModalProps> = ({ users, onClose }) => {
+const RankingModal: React.FC<RankingModalProps> = ({ users, onClose, isLoading }) => {
   // Filtrar Goleiros AP e ordenar usuários por rating (maior para menor)
   const sortedUsers = [...users]
     .filter(u => !u.name.toLowerCase().startsWith('goleiro ap'))
@@ -41,7 +42,13 @@ const RankingModal: React.FC<RankingModalProps> = ({ users, onClose }) => {
         </div>
 
         <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-3 custom-scrollbar">
-          {sortedUsers.length > 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="w-12 h-12 border-4 border-[#f16d22] border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-400 font-bold uppercase italic tracking-widest text-xs">Escalando o Ranking...</p>
+            </div>
+          ) : sortedUsers.length > 0 ? (
+
             sortedUsers.map((user, index) => (
               <div
                 key={user.id}

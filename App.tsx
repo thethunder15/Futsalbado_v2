@@ -19,6 +19,10 @@ import { supabase } from './services/supabase';
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [historyMatches, setHistoryMatches] = useState<Match[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [isRankingLoading, setIsRankingLoading] = useState(false);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -36,6 +40,7 @@ const App: React.FC = () => {
   const [isAdminResetPasswordOpen, setIsAdminResetPasswordOpen] = useState(false);
 
   const [allUsers, setAllUsers] = useState<Record<string, User>>({});
+
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -61,80 +66,149 @@ const App: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-  const fetchMatches = async (attempt = 1) => {
-    try {
-      // Query 1: matches + team_drafts
-      const { data: matchesData, error: matchesError } = await supabase
-        .from('matches')
-        .select('*, team_drafts (*)');
-      if (matchesError) throw matchesError;
-
-      // Query 2: match_players (sem join com users para ser rápido)
-      const { data: playersData, error: playersError } = await supabase
-        .from('match_players')
-        .select('match_id, user_id, status, joined_at');
-      if (playersError) throw playersError;
-
-      // Query 3: Todos os usuários para o "cache" local
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*');
-      if (userError) throw userError;
-
-      // Criar mapa de usuários para acesso rápido O(1)
-      const userMap: Record<string, User> = {};
-      userData.forEach(u => {
-        userMap[u.id] = u;
-      });
-
-      const formattedMatches: Match[] = (matchesData || []).map((m: any) => {
-        const matchPlayers = (playersData || []).filter((mp: any) => mp.match_id === m.id);
-
-        const players: PlayerEntry[] = matchPlayers.map((mp: any) => {
-          const user = userMap[mp.user_id];
-          return {
-            userId: mp.user_id,
-            name: user?.name || 'Desconhecido',
-            status: mp.status,
-            joinedAt: new Date(mp.joined_at).getTime()
-          };
-        });
-
-        let draftData = null;
-        if (Array.isArray(m.team_drafts) && m.team_drafts.length > 0) {
-          draftData = m.team_drafts[0];
-        } else if (m.team_drafts && !Array.isArray(m.team_drafts)) {
-          draftData = m.team_drafts;
-        }
-
-        const draft: TeamDraft | null = draftData ? {
-          id: draftData.id,
-          teamAmarelo: draftData.team_amarelo || [],
-          teamLaranja: draftData.team_laranja || [],
-          justification: draftData.justification || ''
-        } : null;
-
+  const formatMatchData = (matchesData: any[], userMap: Record<string, User>) => {
+    return (matchesData || []).map((m: any) => {
+      const players: PlayerEntry[] = (m.match_players || []).map((mp: any) => {
+        const u = mp.users;
+        if (u) userMap[u.id] = u;
         return {
-          id: m.id,
-          title: m.title,
-          date: m.date,
-          time: (m.time || '00:00:00').substring(0, 5),
-          location: m.location,
-          locationUri: m.location_uri,
-          maxPlayers: m.max_players,
-          pricePerPlayer: Number(m.price_per_player),
-          players: players,
-          organizerId: m.organizer_id,
-          description: m.description,
-          draft: draft,
-          status: m.status,
-          scoreAmarelo: m.score_amarelo,
-          scoreLaranja: m.score_laranja
+          userId: mp.user_id,
+          name: u?.name || 'Desconhecido',
+          status: mp.status,
+          joinedAt: new Date(mp.joined_at).getTime()
         };
       });
 
+      const draft = m.team_drafts && m.team_drafts.length > 0 ? m.team_drafts[0] : null;
+      return {
+        id: m.id,
+        title: m.title,
+        date: m.date,
+        time: (m.time || '00:00:00').substring(0, 5),
+        location: m.location,
+        locationUri: m.location_uri,
+        maxPlayers: m.max_players,
+        pricePerPlayer: Number(m.price_per_player),
+        players: (m.match_players || []).map((mp: any) => {
+          const user = userMap[mp.user_id];
+          return {
+            userId: mp.user_id,
+            name: user?.name || 'Carregando...',
+            avatar: user?.avatar || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${mp.user_id}`,
+            position: user?.position || 'Meio',
+            rating: user?.rating || 3,
+            weight: user?.weight || 75,
+            status: mp.status,
+            joinedAt: mp.joined_at
+          };
+        }),
+        organizerId: m.organizer_id,
+        description: m.description,
+        draft: draft,
+        status: m.status,
+        scoreAmarelo: m.score_amarelo,
+        scoreLaranja: m.score_laranja
+      };
+    });
+  };
+
+  const fetchUsersByIds = async (userIds: string[]) => {
+    if (userIds.length === 0) return {};
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, phone, position, rating, weight, "isAdmin"')
+        .in('id', userIds);
+      
+      if (error) throw error;
+      
+      const userMap: Record<string, User> = { ...allUsers };
+      data?.forEach((u: any) => {
+        userMap[u.id] = {
+          id: u.id,
+          name: u.name,
+          phone: u.phone,
+          avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${u.id}`,
+          position: u.position,
+          rating: u.rating,
+          weight: u.weight,
+          isAdmin: u.isAdmin
+        };
+      });
       setAllUsers(userMap);
+      return userMap;
+    } catch (error) {
+      console.error('Erro ao buscar usuários específicos:', error);
+      return allUsers;
+    }
+  };
+
+  const fetchAllUsers = async () => {
+    setIsRankingLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, phone, position, rating, weight, "isAdmin"')
+        .limit(100); // Limite de segurança para o ranking
+      
+      if (error) throw error;
+      
+      const userMap: Record<string, User> = { ...allUsers };
+      data?.forEach((u: any) => {
+        userMap[u.id] = {
+          id: u.id,
+          name: u.name,
+          phone: u.phone,
+          avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${u.id}`,
+          position: u.position,
+          rating: u.rating,
+          weight: u.weight,
+          isAdmin: u.isAdmin
+        };
+      });
+      setAllUsers(userMap);
+      return userMap;
+    } catch (error) {
+      console.error('Erro ao buscar todos os usuários:', error);
+      return {};
+    } finally {
+      setIsRankingLoading(false);
+    }
+  };
+
+
+
+
+  const fetchMatches = async (attempt = 1) => {
+    try {
+      // OTIMIZAÇÃO SUPREMA: Removemos o JOIN com users que causava timeout
+      const { data: matchesData, error: matchesError } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          team_drafts (*),
+          match_players (
+            match_id, user_id, status, joined_at
+          )
+        `)
+        .eq('status', 'open')
+        .order('date', { ascending: true });
+
+      if (matchesError) throw matchesError;
+
+      // 1. Coletar IDs de usuários das partidas abertas
+      const userIds = new Set<string>();
+      if (currentUser) userIds.add(currentUser.id);
+      matchesData?.forEach(m => {
+        m.match_players?.forEach((mp: any) => userIds.add(mp.user_id));
+      });
+
+      // 2. Buscar apenas estes usuários
+      const userMap = await fetchUsersByIds(Array.from(userIds));
+      const formattedMatches = formatMatchData(matchesData, userMap);
+
       setMatches(formattedMatches);
+
     } catch (error: any) {
       if (error?.code === '57014' && attempt < 3) {
         console.warn(`Timeout na busca (tentativa ${attempt}/3). Retentando...`);
@@ -145,41 +219,105 @@ const App: React.FC = () => {
     }
   };
 
-  const checkPendingRatings = async (currentMatches: Match[], userId: string) => {
+  const fetchHistoryMatches = async () => {
+    setIsHistoryLoading(true);
     try {
-      // 1. Achar partidas finalizadas que o usuário participou
-      const finishedMatchesUserPlayed = currentMatches.filter(
-        m => m.status === 'finished' && m.players.some(p => p.userId === userId)
-      );
+      // OTIMIZAÇÃO: Sem JOIN de usuários no histórico
+      const { data: matchesData, error } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          team_drafts (*),
+          match_players (
+            match_id, user_id, status, joined_at
+          )
+        `)
+        .eq('status', 'finished')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      
+      // 1. Coletar IDs de usuários do histórico
+      const userIds = new Set<string>();
+      matchesData?.forEach(m => {
+        m.match_players?.forEach((mp: any) => userIds.add(mp.user_id));
+      });
+
+      // 2. Buscar apenas estes usuários
+      const userMap = await fetchUsersByIds(Array.from(userIds));
+      const formattedMatches = formatMatchData(matchesData, userMap);
+      setHistoryMatches(formattedMatches);
+
+    } catch (error: any) {
+      console.error('Erro ao buscar histórico:', error);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
+  const fetchRankingUsers = async () => {
+    await fetchAllUsers();
+  };
+
+
+
+  const checkPendingRatings = async (userId: string) => {
+    try {
+      // 1. Buscar partidas que o usuário participou e estão finalizadas
+      const { data: participationData, error: partError } = await supabase
+        .from('match_players')
+        .select(`
+          match_id,
+          matches (*)
+        `)
+        .eq('user_id', userId)
+        .eq('status', 'confirmado');
+
+      if (partError) throw partError;
+
+      const finishedMatchesUserPlayed = (participationData || [])
+        .map((p: any) => Array.isArray(p.matches) ? p.matches[0] : p.matches)
+        .filter(m => m && m.status === 'finished');
 
       if (finishedMatchesUserPlayed.length === 0) {
         setPendingMatchesToRate([]);
         return;
       }
 
+
       // 2. Buscar avaliações enviadas pelo usuário
-      const { data: userRatings, error } = await supabase
+      const { data: userRatings, error: rateError } = await supabase
         .from('player_ratings')
         .select('match_id')
         .eq('rater_id', userId);
 
-      if (error) throw error;
+      if (rateError) throw rateError;
 
       const ratedMatchIds = new Set(userRatings?.map(r => r.match_id) || []);
 
       // 3. Filtrar apenas as partidas ainda não avaliadas
-      const pendingMatches = finishedMatchesUserPlayed.filter(m => !ratedMatchIds.has(m.id));
+      const pendingMatches = finishedMatchesUserPlayed
+        .filter(m => !ratedMatchIds.has(m.id))
+        .map((m: any) => ({
+          ...m,
+          locationUri: m.location_uri,
+          pricePerPlayer: Number(m.price_per_player),
+          players: [] // Não precisamos dos jogadores aqui, ou podemos buscar se necessário
+        }));
+
       setPendingMatchesToRate(pendingMatches);
     } catch (error) {
       console.error('Erro ao checar avaliações pendentes:', error);
     }
   };
 
+
   useEffect(() => {
-    if (currentUser && matches.length > 0) {
-      checkPendingRatings(matches, currentUser.id);
+    if (currentUser) {
+      checkPendingRatings(currentUser.id);
     }
-  }, [currentUser, matches]);
+  }, [currentUser]);
+
 
   useEffect(() => {
     const checkSession = async () => {
@@ -269,8 +407,11 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setHistoryMatches([]);
+    setPendingMatchesToRate([]);
     localStorage.removeItem('futsalbado_user');
   };
+
 
   const handleSaveMatch = async (matchData: Partial<Match>) => {
     if (!currentUser || currentUser.id.startsWith('guest_')) return;
@@ -403,8 +544,9 @@ const App: React.FC = () => {
           setIsPendingRatingsModalOpen(true);
           // Força a atualização do estado caso estivesse defasado
           if (hasActualPendencies && pendingMatchesToRate.length === 0) {
-            checkPendingRatings(matches, currentUser.id);
+            checkPendingRatings(currentUser.id);
           }
+
           return;
         }
 
@@ -707,13 +849,20 @@ const App: React.FC = () => {
           theme={theme}
           onToggleTheme={toggleTheme}
           onEditProfile={() => setIsProfileModalOpen(true)}
-          onShowRanking={() => setIsRankingModalOpen(true)} 
-          onShowHistory={() => setIsHistoryModalOpen(true)} 
+          onShowRanking={() => {
+            fetchRankingUsers();
+            setIsRankingModalOpen(true);
+          }} 
+          onShowHistory={() => {
+            fetchHistoryMatches();
+            setIsHistoryModalOpen(true);
+          }} 
           onOpenPendingRatings={() => setIsPendingRatingsModalOpen(true)}
           pendingRatingsCount={pendingMatchesToRate.length}
           onLogout={handleLogout}
           onAdminResetPassword={() => setIsAdminResetPasswordOpen(true)}
         />
+
 
       <main className="max-w-4xl mx-auto px-4 pt-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -805,12 +954,15 @@ const App: React.FC = () => {
 
       {isHistoryModalOpen && (
         <HistoryModal
-          matches={matches}
+          matches={historyMatches}
           currentUserId={currentUser.id}
           allUsers={allUsers}
           onClose={() => setIsHistoryModalOpen(false)}
+          isLoading={isHistoryLoading}
         />
       )}
+
+
 
       {isModalOpen && currentUser?.isAdmin && (
         <MatchModal
@@ -835,8 +987,10 @@ const App: React.FC = () => {
         <RankingModal
           users={Object.values(allUsers)}
           onClose={() => setIsRankingModalOpen(false)}
+          isLoading={isRankingLoading}
         />
       )}
+
 
       {isPendingRatingsModalOpen && (
         <PendingRatingsModal
@@ -845,10 +999,11 @@ const App: React.FC = () => {
           allUsers={allUsers}
           onClose={() => setIsPendingRatingsModalOpen(false)}
           onRatingsSubmitted={() => {
-            checkPendingRatings(matches, currentUser.id);
+            if (currentUser) checkPendingRatings(currentUser.id);
             fetchMatches(); // Re-fetch matches to update player ratings
           }}
         />
+
       )}
 
       {currentUser?.isAdmin && (

@@ -6,8 +6,10 @@ interface HistoryModalProps {
     matches: Match[];
     currentUserId: string;
     allUsers: Record<string, User>;
+    isLoading?: boolean;
 }
-const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches, currentUserId, allUsers }) => {
+const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches, currentUserId, allUsers, isLoading }) => {
+
     const finishedMatches = useMemo(() => {
         return matches
             .filter(m => m.status === 'finished')
@@ -70,12 +72,18 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, matches, currentUs
                 </div>
 
                 <div className="p-6">
-                    {finishedMatches.length === 0 ? (
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <div className="w-12 h-12 border-4 border-[#f16d22] border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-gray-400 font-bold uppercase italic tracking-widest text-xs">Carregando Histórico...</p>
+                        </div>
+                    ) : finishedMatches.length === 0 ? (
                         <div className="text-center py-10">
                             <div className="text-4xl mb-4">👻</div>
                             <p className="text-gray-400 font-bold uppercase italic tracking-widest text-sm">Nenhuma partida finalizada ainda.</p>
                         </div>
                     ) : (
+
                         <>
                             {/* Vencedor Supremo */}
                             <div className="mb-8">
