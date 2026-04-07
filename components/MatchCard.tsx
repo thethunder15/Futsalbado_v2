@@ -26,6 +26,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
   const [copied, setCopied] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [usedFallback, setUsedFallback] = useState(false);
 
   const draft = match.draft;
 
@@ -45,6 +46,8 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
     try {
       const result = await balanceTeams(match.players, allUsers);
 
+      setUsedFallback(result.usedFallback ?? false);
+
       // Salvar o draft no Supabase usando upsert para evitar conflito de chave duplicada
       const { error } = await supabase
         .from('team_drafts')
@@ -61,8 +64,8 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
       onDraftSaved();
 
     } catch (error) {
-      console.error(error);
-      alert("Erro ao sortear times. Tente novamente.");
+      console.error('Erro no sorteio:', error);
+      alert('Erro ao salvar o sorteio. Tente novamente.');
     } finally {
       setIsDrafting(false);
     }
@@ -402,7 +405,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
           <div className="mt-8 p-6 bg-[#f16d22]/5 border-2 border-[#f16d22]/20 rounded-[2rem] animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-black text-gray-900 dark:text-white uppercase italic tracking-tight flex items-center gap-2">
-                <span className="text-lg">🤖</span> Times Equilibrados
+                <span className="text-lg">{usedFallback ? '⚖️' : '🤖'}</span>
+                Times Equilibrados
+                {usedFallback && (
+                  <span className="text-[9px] font-black bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full border border-yellow-300 dark:border-yellow-700 normal-case not-italic">
+                    Sorteio Local
+                  </span>
+                )}
               </h4>
               <div className="h-0.5 flex-1 mx-4 bg-[#f16d22]/10"></div>
             </div>

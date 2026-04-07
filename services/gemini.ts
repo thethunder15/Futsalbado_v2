@@ -4,7 +4,51 @@ import { User, PlayerEntry, TeamDraft } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
-export const balanceTeams = async (players: PlayerEntry[], userDetails: Record<string, User>): Promise<TeamDraft> => {
+// ─── Algoritmo local de fallback ────────────────────────────────────────────
+// Usado quando a API do Gemini estiver indisponível (cota esgotada, etc.)
+const balanceTeamsLocally = (
+  playerData: { name: string; rating: number; position: string; weight: number }[]
+): TeamDraft & { usedFallback: boolean } => {
+  // Separa goleiros dos demais
+  const goalkeepers = playerData.filter(p => p.position === 'Goleiro');
+  const outfield = playerData.filter(p => p.position !== 'Goleiro');
+
+  // Ordena jogadores de campo por rating decrescente para distribuição equilibrada
+  outfield.sort((a, b) => b.rating - a.rating);
+
+  const teamAmarelo: string[] = [];
+  const teamLaranja: string[] = [];
+  let sumAmarelo = 0;
+  let sumLaranja = 0;
+
+  // Distribui um goleiro para cada time (se houver)
+  goalkeepers.forEach((gk, i) => {
+    if (i % 2 === 0) teamAmarelo.push(gk.name);
+    else teamLaranja.push(gk.name);
+  });
+
+  // Distribui os demais usando algoritmo greedy (sempre coloca no time com menor soma)
+  outfield.forEach(p => {
+    if (sumAmarelo <= sumLaranja) {
+      teamAmarelo.push(p.name);
+      sumAmarelo += p.rating;
+    } else {
+      teamLaranja.push(p.name);
+      sumLaranja += p.rating;
+    }
+  });
+
+  const diff = Math.abs(sumAmarelo - sumLaranja).toFixed(1);
+  const justification = `Sorteio local (IA indisponível): times equilibrados por rating e posição. Diferença de habilidade: ${diff} ponto(s). Goleiros distribuídos: ${goalkeepers.length} no total.`;
+
+  return { teamAmarelo, teamLaranja, justification, usedFallback: true };
+};
+
+// ─── Função principal ────────────────────────────────────────────────────────
+export const balanceTeams = async (
+  players: PlayerEntry[],
+  userDetails: Record<string, User>
+): Promise<TeamDraft & { usedFallback?: boolean }> => {
   const playerData = players
     .filter(p => p.status === 'confirmado')
     .map(p => {
@@ -28,24 +72,39 @@ export const balanceTeams = async (players: PlayerEntry[], userDetails: Record<s
     Jogadores: ${JSON.stringify(playerData)}
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          teamAmarelo: { type: Type.ARRAY, items: { type: Type.STRING } },
-          teamLaranja: { type: Type.ARRAY, items: { type: Type.STRING } },
-          justification: { type: Type.STRING, description: "Explicação breve de por que os times estão equilibrados" }
-        },
-        required: ["teamAmarelo", "teamLaranja", "justification"]
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            teamAmarelo: { type: Type.ARRAY, items: { type: Type.STRING } },
+            teamLaranja: { type: Type.ARRAY, items: { type: Type.STRING } },
+            justification: { type: Type.STRING, description: "Explicação breve de por que os times estão equilibrados" }
+          },
+          required: ["teamAmarelo", "teamLaranja", "justification"]
+        }
       }
-    }
-  });
+    });
 
-  return JSON.parse(response.text);
+    return { ...JSON.parse(response.text), usedFallback: false };
+
+  } catch (err: any) {
+    const status = err?.status ?? err?.errorDetails?.[0]?.reason ?? '';
+    const isQuota = err?.message?.includes('429') || err?.message?.includes('RESOURCE_EXHAUSTED') || String(status) === '429';
+
+    if (isQuota) {
+      console.warn('⚠️ Cota da API Gemini esgotada. Usando algoritmo local de sorteio.');
+    } else {
+      console.error('Erro na API Gemini:', err);
+    }
+
+    // Fallback: sorteio local
+    return balanceTeamsLocally(playerData);
+  }
 };
 
 export const searchLocationOnMaps = async (query: string, userCoords?: { lat: number, lng: number }) => {
