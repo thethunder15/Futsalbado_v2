@@ -530,31 +530,8 @@ const App: React.FC = () => {
         showToast('Presença cancelada. Que pena! ❌');
         fetchMatches(); // Recarregar após sair
       } else {
-        // Validação autoritativa das pendências direto no banco para evitar race conditions
-        const { data: userRatings } = await supabase
-          .from('player_ratings')
-          .select('match_id')
-          .eq('rater_id', currentUser.id);
-        
-        const ratedMatchIds = new Set(userRatings?.map(r => r.match_id) || []);
-        
-        const finishedMatchesUserPlayed = matches.filter(
-          m => m.status === 'finished' && m.players.some(p => p.userId === currentUser.id)
-        );
-        
-        const hasActualPendencies = finishedMatchesUserPlayed.some(m => !ratedMatchIds.has(m.id));
-
-        // Bloquear inscrição se houver pendências
-        if (hasActualPendencies || pendingMatchesToRate.length > 0) {
-          showToast('Você possui avaliações pendentes! Resolva-as antes de se inscrever.');
-          setIsPendingRatingsModalOpen(true);
-          // Força a atualização do estado caso estivesse defasado
-          if (hasActualPendencies && pendingMatchesToRate.length === 0) {
-            checkPendingRatings(currentUser.id);
-          }
-
-          return;
-        }
+        // [REMOVIDO] A restrição de bloqueio baseada em avaliações pendentes foi retirada a pedido do usuário.
+        // O código agora apenas valida se a partida está lotada (maxPlayers).
 
         if (match.players.length >= match.maxPlayers) {
           showToast('Vagas esgotadas! 🚫');
