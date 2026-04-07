@@ -29,7 +29,7 @@ export const balanceTeams = async (players: PlayerEntry[], userDetails: Record<s
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -74,7 +74,7 @@ export const searchLocationOnMaps = async (query: string, userCoords?: { lat: nu
 
 export const generateMatchHype = async (matchTitle: string, location: string): Promise<string> => {
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Crie uma convocação animada e engraçada para uma pelada de futebol chamada "${matchTitle}" que vai acontecer em "${location}". Use gírias de futebol brasileiro.`,
   });
   return response.text;
