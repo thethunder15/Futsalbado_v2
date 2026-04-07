@@ -79,7 +79,10 @@ const App: React.FC = () => {
         };
       });
 
-      const draftRaw = m.team_drafts && m.team_drafts.length > 0 ? m.team_drafts[0] : null;
+      let draftRaw = null;
+      if (m.team_drafts) {
+        draftRaw = Array.isArray(m.team_drafts) ? (m.team_drafts.length > 0 ? m.team_drafts[0] : null) : m.team_drafts;
+      }
       const draft: TeamDraft | null = draftRaw ? {
         id: draftRaw.id,
         teamAmarelo: draftRaw.team_amarelo as string[],
