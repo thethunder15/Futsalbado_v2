@@ -26,6 +26,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
   const [copied, setCopied] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEarlyFinishConfirm, setShowEarlyFinishConfirm] = useState(false);
   const [usedFallback, setUsedFallback] = useState(false);
 
   const draft = match.draft;
@@ -107,6 +108,14 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
     }
   };
 
+  const handleFinishMatchClick = () => {
+    if (isUpcoming()) {
+      setShowEarlyFinishConfirm(true);
+    } else {
+      onFinishMatch();
+    }
+  };
+
   const canEditOrDelete = isAdmin;
 
   return (
@@ -158,6 +167,38 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
                 className="flex-1 bg-red-500 text-white py-4 rounded-2xl font-black uppercase italic text-xs shadow-lg shadow-red-900/20 hover:bg-red-600 transition-all transform active:scale-95"
               >
                 Confirmar Exclusão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Early Finish Confirmation Modal */}
+      {showEarlyFinishConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1e1e1e] w-full max-w-sm rounded-[2rem] shadow-2xl border-4 border-yellow-500 p-8 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter mb-2">Encerrar Antecipadamente?</h3>
+            <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-6">
+              A data e hora previstas para esta partida ainda não chegaram. Deseja realmente encerrá-la agora?
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowEarlyFinishConfirm(false)}
+                className="flex-1 py-4 bg-gray-100 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-300 rounded-2xl font-black uppercase italic text-xs hover:bg-gray-200 transition-all transform active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  onFinishMatch();
+                  setShowEarlyFinishConfirm(false);
+                }}
+                className="flex-1 bg-yellow-500 text-white py-4 rounded-2xl font-black uppercase italic text-xs shadow-lg shadow-yellow-900/20 hover:bg-yellow-600 transition-all transform active:scale-95"
+              >
+                Sim, Encerrar
               </button>
             </div>
           </div>
@@ -390,9 +431,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
               </button>
             )}
 
-            {isAdmin && draft && (
+            {isAdmin && (
               <button
-                onClick={onFinishMatch}
+                onClick={handleFinishMatchClick}
                 className="w-full sm:w-auto px-6 py-4 bg-green-500 text-white rounded-2xl font-black uppercase italic text-sm hover:bg-green-600 border border-green-600 transition-all transform active:scale-95 shadow-xl shadow-green-900/20 flex items-center justify-center gap-2"
               >
                 <WhistleIcon className="w-5 h-5 mb-0.5" /> Finalizar
