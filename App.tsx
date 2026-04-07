@@ -79,7 +79,13 @@ const App: React.FC = () => {
         };
       });
 
-      const draft = m.team_drafts && m.team_drafts.length > 0 ? m.team_drafts[0] : null;
+      const draftRaw = m.team_drafts && m.team_drafts.length > 0 ? m.team_drafts[0] : null;
+      const draft: TeamDraft | null = draftRaw ? {
+        id: draftRaw.id,
+        teamAmarelo: draftRaw.team_amarelo as string[],
+        teamLaranja: draftRaw.team_laranja as string[],
+        justification: draftRaw.justification
+      } : null;
       return {
         id: m.id,
         title: m.title,
