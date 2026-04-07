@@ -15,6 +15,10 @@ export interface PlayerEntry {
   name: string;
   status: 'confirmado' | 'pendente' | 'ausente';
   joinedAt: number;
+  position?: User['position'];
+  rating?: number; // 1-5
+  weight?: number; // Peso em kg
+  avatar?: string;
 }
 
 export interface Match {

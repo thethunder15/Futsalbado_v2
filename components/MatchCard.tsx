@@ -464,7 +464,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
                     const playersInPosition = draft.teamAmarelo
                       .map(name => match.players.find(p => p.name === name))
                       .filter(Boolean)
-                      .filter(p => p && allUsers[p.userId]?.position === position);
+                      .filter(p => p && p.position === position);
 
                     if (playersInPosition.length === 0) return null;
 
@@ -491,7 +491,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
                     const playersInPosition = draft.teamLaranja
                       .map(name => match.players.find(p => p.name === name))
                       .filter(Boolean)
-                      .filter(p => p && allUsers[p.userId]?.position === position);
+                      .filter(p => p && p.position === position);
 
                     if (playersInPosition.length === 0) return null;
 
