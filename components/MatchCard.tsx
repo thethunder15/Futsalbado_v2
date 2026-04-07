@@ -45,32 +45,17 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onJoin, onEdit, onDelete, 
     try {
       const result = await balanceTeams(match.players, allUsers);
 
-      // Salvar o draft no Supabase
-      if (draft?.id) {
-        // Atualiza sorteio existente
-        const { error } = await supabase
-          .from('team_drafts')
-          .update({
-            team_amarelo: result.teamAmarelo,
-            team_laranja: result.teamLaranja,
-            justification: result.justification
-          })
-          .eq('id', draft.id);
+      // Salvar o draft no Supabase usando upsert para evitar conflito de chave duplicada
+      const { error } = await supabase
+        .from('team_drafts')
+        .upsert({
+          match_id: match.id,
+          team_amarelo: result.teamAmarelo,
+          team_laranja: result.teamLaranja,
+          justification: result.justification
+        }, { onConflict: 'match_id' });
 
-        if (error) throw error;
-      } else {
-        // Insere novo sorteio
-        const { error } = await supabase
-          .from('team_drafts')
-          .insert([{
-            match_id: match.id,
-            team_amarelo: result.teamAmarelo,
-            team_laranja: result.teamLaranja,
-            justification: result.justification
-          }]);
-
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       // Aciona o recarregamento pelo pai
       onDraftSaved();
